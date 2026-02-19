@@ -139,8 +139,8 @@ VALUES (
     );
 -- Insert site settings
 INSERT INTO site_settings (key, value)
-VALUES ('whatsapp_number', '"0712345678"'),
-    ('email', '"hello@plusarchupcycle.com"'),
+VALUES ('whatsapp_number', '"+94 774442642"'),
+    ('email', '"plusarch.lk@gmail.com"'),
     (
         'social_links',
         '{"instagram": "https://www.instagram.com/plusarch_upcycle/", "facebook": "https://facebook.com/plusarchupcycle"}'

@@ -24,7 +24,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [usdRate, setUsdRate] = useState(0.003)
-  const [whatsappNumber, setWhatsappNumber] = useState('94712345678')
+  const [whatsappNumber, setWhatsappNumber] = useState('94774442642')
 
   const supabase = createClient()
 

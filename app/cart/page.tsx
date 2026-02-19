@@ -70,7 +70,7 @@ export default function CartPage() {
         .eq('key', 'whatsapp_number')
         .maybeSingle()
 
-      let whatsappNumber = '94712345678'
+      let whatsappNumber = '94774442642'
       if (setting?.value) {
         const raw =
           typeof setting.value === 'string'

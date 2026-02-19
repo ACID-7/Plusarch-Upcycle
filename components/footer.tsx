@@ -34,8 +34,8 @@ function cleanJsonValue(value: unknown) {
 
 export function Footer() {
   const supabase = createClient()
-  const [email, setEmail] = useState('hello@plusarch.com')
-  const [whatsappNumber, setWhatsappNumber] = useState('94712345678')
+  const [email, setEmail] = useState('plusarch.lk@gmail.com')
+  const [whatsappNumber, setWhatsappNumber] = useState('94774442642')
   const [whatsappMessage, setWhatsappMessage] = useState('Hi Plus Arch, I need help with an order.')
   const [socialLinks, setSocialLinks] = useState<SocialLinks>({
     instagram: 'https://www.instagram.com/plusarch_upcycle/',
@@ -141,7 +141,7 @@ export function Footer() {
               </a>
               <p className="inline-flex items-center gap-2 text-emerald-100/70">
                 <Phone className="h-4 w-4" />
-                +94 11 123 4567
+                +94 77 444 2642
               </p>
             </div>
             <div className="flex items-center gap-2 pt-1">
