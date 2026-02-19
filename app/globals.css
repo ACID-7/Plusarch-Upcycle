@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 150 12% 7%;
+    --foreground: 145 24% 96%;
+    --card: 150 11% 11%;
+    --card-foreground: 145 24% 96%;
+    --popover: 150 12% 10%;
+    --popover-foreground: 145 24% 96%;
+    --primary: 148 62% 45%;
+    --primary-foreground: 145 32% 96%;
+    --secondary: 155 15% 16%;
+    --secondary-foreground: 145 22% 92%;
+    --muted: 160 10% 24%;
+    --muted-foreground: 150 10% 70%;
+    --accent: 150 22% 18%;
+    --accent-foreground: 145 24% 96%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 150 12% 96%;
+    --border: 150 12% 22%;
+    --input: 150 12% 22%;
+    --ring: 148 62% 45%;
+    --radius: 0.875rem;
+  }
+
+  .dark {
+    --background: 150 12% 6%;
+    --foreground: 145 24% 96%;
+    --card: 150 12% 10%;
+    --card-foreground: 145 24% 96%;
+    --popover: 150 12% 10%;
+    --popover-foreground: 145 24% 96%;
+    --primary: 148 62% 45%;
+    --primary-foreground: 145 32% 96%;
+    --secondary: 155 15% 16%;
+    --secondary-foreground: 145 22% 92%;
+    --muted: 160 10% 24%;
+    --muted-foreground: 150 10% 70%;
+    --accent: 150 22% 18%;
+    --accent-foreground: 145 24% 96%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 150 12% 96%;
+    --border: 150 12% 22%;
+    --input: 150 12% 22%;
+    --ring: 148 62% 45%;
+  }
+}
+
+@layer utilities {
+  .chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(52, 211, 153, 0.85) rgba(6, 24, 17, 0.65);
+  }
+
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, rgba(6, 24, 17, 0.7), rgba(7, 30, 21, 0.7));
+    border-radius: 9999px;
+    border: 1px solid rgba(16, 98, 73, 0.35);
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.95), rgba(16, 185, 129, 0.9));
+    border-radius: 9999px;
+    border: 2px solid rgba(6, 24, 17, 0.8);
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.35);
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(110, 231, 183, 0.98), rgba(34, 197, 94, 0.95));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: var(--font-sans), 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-image:
+      radial-gradient(circle at 12% 20%, rgba(74, 222, 128, 0.08), transparent 32%),
+      radial-gradient(circle at 82% 8%, rgba(16, 185, 129, 0.08), transparent 26%),
+      radial-gradient(circle at 70% 70%, rgba(59, 130, 246, 0.04), transparent 30%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.025), rgba(0, 0, 0, 0.1));
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), 'Playfair Display', serif;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: rgba(74, 222, 128, 0.35);
+    color: hsl(var(--background));
+  }
+}
