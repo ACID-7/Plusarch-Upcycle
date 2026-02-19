@@ -143,7 +143,7 @@ VALUES ('whatsapp_number', '"0712345678"'),
     ('email', '"hello@plusarchupcycle.com"'),
     (
         'social_links',
-        '{"instagram": "https://instagram.com/plusarchupcycle", "facebook": "https://facebook.com/plusarchupcycle"}'
+        '{"instagram": "https://www.instagram.com/plusarch_upcycle/", "facebook": "https://facebook.com/plusarchupcycle"}'
     ),
     (
         'business_hours',

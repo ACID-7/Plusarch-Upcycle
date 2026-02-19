@@ -38,7 +38,7 @@ export function Footer() {
   const [whatsappNumber, setWhatsappNumber] = useState('94712345678')
   const [whatsappMessage, setWhatsappMessage] = useState('Hi Plus Arch, I need help with an order.')
   const [socialLinks, setSocialLinks] = useState<SocialLinks>({
-    instagram: 'https://instagram.com/plusarchupcycle',
+    instagram: 'https://www.instagram.com/plusarch_upcycle/',
     facebook: 'https://facebook.com/plusarchupcycle',
   })
 
