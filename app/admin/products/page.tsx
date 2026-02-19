@@ -21,7 +21,6 @@ interface ProductRow {
   price_lkr: number
   status: 'active' | 'hidden'
   category_id: string | null
-  is_featured: boolean
   product_images?: { path: string; sort_order?: number | null }[]
 }
 
@@ -55,7 +54,6 @@ export default function AdminProductsPage() {
     price_lkr: 0,
     status: 'active',
     category_id: null,
-    is_featured: false,
   })
   const [draftImages, setDraftImages] = useState<Array<{ path: string; sort_order?: number }>>([{ path: '', sort_order: 0 }])
   const [imageInputs, setImageInputs] = useState<Record<string, string>>({})
@@ -69,7 +67,7 @@ export default function AdminProductsPage() {
     const [{ data: productData }, { data: categoryData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id, name, slug, description, materials, care, price_lkr, status, category_id, is_featured, product_images(path, sort_order)')
+        .select('id, name, slug, description, materials, care, price_lkr, status, category_id, product_images(path, sort_order)')
         .order('created_at', { ascending: false }),
       supabase.from('categories').select('id, name').order('name'),
     ])
@@ -96,7 +94,6 @@ export default function AdminProductsPage() {
         price_lkr: draft.price_lkr,
         status: draft.status || 'active',
         category_id: draft.category_id,
-        is_featured: !!draft.is_featured,
       })
       .select()
       .single()
@@ -122,7 +119,6 @@ export default function AdminProductsPage() {
       price_lkr: 0,
       status: 'active',
       category_id: null,
-      is_featured: false,
     })
     setDraftImages([{ path: '', sort_order: 0 }])
     toast({ title: 'Product created' })
@@ -138,7 +134,6 @@ export default function AdminProductsPage() {
       price_lkr: product.price_lkr,
       status: product.status,
       category_id: product.category_id,
-      is_featured: product.is_featured,
     })
   }
 
@@ -152,7 +147,6 @@ export default function AdminProductsPage() {
       price_lkr: editDraft.price_lkr,
       status: editDraft.status || 'active',
       category_id: editDraft.category_id || null,
-      is_featured: !!editDraft.is_featured,
     }
 
     const { error } = await supabase.from('products').update(payload).eq('id', editingId)
@@ -258,11 +252,6 @@ export default function AdminProductsPage() {
             <Textarea placeholder="Care" value={draft.care || ''} onChange={(e) => setDraft({ ...draft, care: e.target.value })} className="bg-white/5 border-emerald-900/60 text-white placeholder:text-emerald-200/60" rows={3} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <input id="featured" type="checkbox" checked={!!draft.is_featured} onChange={(e) => setDraft({ ...draft, is_featured: e.target.checked })} />
-            <label htmlFor="featured" className="text-sm text-emerald-100/80">Mark as featured</label>
-          </div>
-
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-emerald-100/80">
               <Info className="h-4 w-4" /> Photos (display order follows sort)
@@ -329,10 +318,6 @@ export default function AdminProductsPage() {
                           <SelectItem value="hidden">Hidden</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-2 text-sm text-emerald-100/80">
-                        <input type="checkbox" checked={!!editDraft.is_featured} onChange={(e) => setEditDraft({ ...editDraft, is_featured: e.target.checked })} />
-                        Featured
-                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       <Textarea value={editDraft.description || ''} onChange={(e) => setEditDraft({ ...editDraft, description: e.target.value })} className="bg-white/5 border-emerald-900/60 text-white" rows={3} />
@@ -357,7 +342,6 @@ export default function AdminProductsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="border-emerald-300/60 text-emerald-50 capitalize">{product.status}</Badge>
-                        {product.is_featured && <Badge variant="outline" className="border-emerald-300/60 text-emerald-50">Featured</Badge>}
                         <span className="text-white">LKR {product.price_lkr.toLocaleString()}</span>
                       </div>
                     </div>

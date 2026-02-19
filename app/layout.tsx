@@ -21,6 +21,11 @@ const display = Playfair_Display({ subsets: ['latin'], variable: '--font-display
 export const metadata: Metadata = {
   title: 'Plus Arch | Eco-Friendly Upcycled Accessories',
   description: 'Thoughtfully crafted accessories that celebrate circular design and Sri Lankan artistry.',
+  icons: {
+    icon: '/site-icon.jpeg',
+    shortcut: '/site-icon.jpeg',
+    apple: '/site-icon.jpeg',
+  },
 }
 
 export default function RootLayout({
@@ -30,12 +35,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${sans.className} ${sans.variable} ${display.variable} antialiased`}>
+      <body className={`${sans.className} ${sans.variable} ${display.variable} antialiased min-h-screen flex flex-col`}>
         <AuthProvider>
           <CartProvider>
             <WishlistProvider>
               <Header />
-              <main className="pt-24">{children}</main>
+              <main className="pt-24 flex-1">{children}</main>
               <Footer />
               <ChatWidget />
               <Toaster />

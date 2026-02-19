@@ -20,7 +20,7 @@ export default function Home() {
               <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/80 mb-2">For conscious travelers</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Circular luxury, shipped islandwide</h2>
               <p className="text-emerald-100/80 mt-3 max-w-2xl">
-                We design for global wardrobes, streamlined customs-ready packing, carbon-light materials, and repairs on us for the first year.
+                We design for global wardrobes, streamlined customs-ready packing, and carbon-light materials.
               </p>
             </div>
             <motion.div
@@ -46,8 +46,8 @@ export default function Home() {
               },
               {
                 icon: ShieldCheck,
-                title: 'Care guarantee',
-                body: 'One-year repairs on us + optional refresh kits to keep every piece glowing.',
+                title: 'Care support',
+                body: 'Easy maintenance guidance and optional refresh kits to keep every piece glowing.',
               },
             ].map((item, idx) => (
               <motion.div

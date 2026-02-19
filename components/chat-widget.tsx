@@ -22,6 +22,11 @@ interface Conversation {
   status: 'open' | 'pending' | 'closed'
 }
 
+interface OpenChatDetail {
+  mode?: 'ai' | 'person' | 'live'
+  prefill?: string
+}
+
 const DEFAULT_AI_QUICK_REPLIES = [
   'Shipping options',
   'Returns & exchanges',
@@ -49,14 +54,18 @@ export function ChatWidget() {
   const supabase = createClient()
 
   useEffect(() => {
-    const handleOpenChat = (event: CustomEvent) => {
+    const handleOpenChat = (event: CustomEvent<OpenChatDetail>) => {
       const mode = event.detail?.mode === 'ai' ? 'ai' : 'live'
+      const prefill = event.detail?.prefill?.trim()
       setChatMode(mode)
       setStatusNote(
         mode === 'ai'
           ? 'AI assistant is ready. Verify final order details in live chat or WhatsApp.'
-          : 'You are connected to a live specialist.'
+          : user
+            ? 'You are connected to a live specialist.'
+            : 'Sign in to start live chat with a specialist.'
       )
+      if (prefill) setNewMessage(prefill)
       setIsOpen(true)
     }
 
@@ -65,7 +74,7 @@ export function ChatWidget() {
     return () => {
       document.removeEventListener('openChat', handleOpenChat as EventListener)
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -278,7 +287,7 @@ export function ChatWidget() {
     }
   }
 
-  if (!user || pathname?.startsWith('/admin')) return null
+  if (pathname?.startsWith('/admin')) return null
 
   return (
     <>
@@ -405,42 +414,63 @@ export function ChatWidget() {
                       ))}
                     </div>
 
-                    {/* Messages */}
-                    <div className="chat-scrollbar mb-3 min-h-0 flex-1 overflow-y-auto space-y-2 px-1">
-                      {messages.length === 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="rounded-xl border border-emerald-900/50 bg-white/5 p-3 shadow-sm text-emerald-50/80"
-                        >
-                          <p className="text-sm font-medium text-white">Start a live chat with our team.</p>
-                          <p className="text-xs text-emerald-100/70 mt-1">
-                            We reply during business hours and can continue over WhatsApp if needed.
-                          </p>
-                        </motion.div>
-                      )}
-                      {messages.map((message) => (
-                        <motion.div
-                          key={message.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex ${
-                            message.sender_type === 'user' ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
-                          <div
-                            className={`max-w-[94%] rounded-2xl px-4 py-2 text-sm leading-snug break-words shadow-sm ${
-                              message.sender_type === 'user'
-                                ? 'bg-gradient-to-r from-emerald-400 to-green-500 text-slate-950'
-                                : 'ml-1 border border-emerald-800/60 bg-white/10 text-emerald-50'
-                            }`}
+                    {user ? (
+                      <>
+                        {/* Messages */}
+                        <div className="chat-scrollbar mb-3 min-h-0 flex-1 overflow-y-auto space-y-2 px-1">
+                          {messages.length === 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="rounded-xl border border-emerald-900/50 bg-white/5 p-3 shadow-sm text-emerald-50/80"
+                            >
+                              <p className="text-sm font-medium text-white">Start a live chat with our team.</p>
+                              <p className="text-xs text-emerald-100/70 mt-1">
+                                We reply during business hours and can continue over WhatsApp if needed.
+                              </p>
+                            </motion.div>
+                          )}
+                          {messages.map((message) => (
+                            <motion.div
+                              key={message.id}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`flex ${
+                                message.sender_type === 'user' ? 'justify-end' : 'justify-start'
+                              }`}
+                            >
+                              <div
+                                className={`max-w-[94%] rounded-2xl px-4 py-2 text-sm leading-snug break-words shadow-sm ${
+                                  message.sender_type === 'user'
+                                    ? 'bg-gradient-to-r from-emerald-400 to-green-500 text-slate-950'
+                                    : 'ml-1 border border-emerald-800/60 bg-white/10 text-emerald-50'
+                                }`}
+                              >
+                                {message.body}
+                              </div>
+                            </motion.div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="mb-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-emerald-900/50 bg-white/5 p-4 text-center">
+                        <div>
+                          <p className="text-sm font-medium text-white">Sign in required for live chat.</p>
+                          <p className="mt-1 text-xs text-emerald-100/70">You can still use AI chat without signing in.</p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="mt-3 bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                            onClick={() => {
+                              window.location.href = `/auth/login?next=${encodeURIComponent(pathname || '/')}`
+                            }}
                           >
-                            {message.body}
-                          </div>
-                        </motion.div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </div>
+                            Sign In
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Message Input */}
                     <div className="flex space-x-2">
@@ -449,12 +479,12 @@ export function ChatWidget() {
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type your message..."
                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                        disabled={loading}
+                        disabled={loading || !user}
                         className="bg-white/5 border-emerald-900/60 text-white placeholder:text-emerald-200/60"
                       />
                       <Button
                         onClick={() => sendMessage()}
-                        disabled={loading || !newMessage.trim()}
+                        disabled={loading || !newMessage.trim() || !user}
                         className="bg-gradient-to-r from-emerald-400 to-green-500 text-slate-950 hover:from-emerald-300 hover:to-green-400"
                       >
                         <SendHorizonal className="h-4 w-4" />

@@ -130,8 +130,13 @@ export function Footer() {
                 <Mail className="h-4 w-4" />
                 {email}
               </a>
-              <a href={whatsappHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-emerald-100/80 hover:text-emerald-300">
-                <MessageCircle className="h-4 w-4" />
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-700/60 bg-emerald-500/10 px-3 py-1.5 text-emerald-100 hover:border-emerald-400/70 hover:text-emerald-200"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0" />
                 WhatsApp support
               </a>
               <p className="inline-flex items-center gap-2 text-emerald-100/70">

@@ -117,12 +117,15 @@ export default function ProductPage() {
   }
 
   const handleAskAI = () => {
-    document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'ai' } }))
+    const productName = product?.name?.trim()
+    const prefill = productName ? `I need details about "${productName}".` : ''
+    document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'ai', prefill } }))
   }
 
   const handleChatWithPerson = () => {
-    // This will be handled by the chat widget
-    document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'person' } }))
+    const productName = product?.name?.trim()
+    const prefill = productName ? `Hi, I need help with "${productName}".` : ''
+    document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'person', prefill } }))
   }
 
   if (loading) {

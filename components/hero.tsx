@@ -195,7 +195,7 @@ export function Hero() {
                 size="lg"
                 className="w-full sm:w-auto text-slate-900 bg-white/90 hover:bg-white font-semibold px-8 py-3 rounded-full transition-all duration-300 border border-emerald-100/60"
                 onClick={() => {
-                  document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'person' } }))
+                  document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'person', prefill: 'Hi, I need to talk to a specialist.' } }))
                 }}
               >
                 <Star className="w-5 h-5 mr-2 text-emerald-600" />
@@ -204,26 +204,6 @@ export function Hero() {
             </motion.div>
           </motion.div>
         </div>
-      </motion.div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 2.0 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-      >
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center"
-        >
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-1 h-3 bg-white/50 rounded-full mt-2"
-          />
-        </motion.div>
       </motion.div>
     </motion.section>
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Recycle, Heart, Star, Users, Award, Leaf } from 'lucide-react'
+import { Recycle, Heart, Users, Leaf } from 'lucide-react'
 
 export function SocialProof() {
   const stats = [
@@ -22,28 +22,12 @@ export function SocialProof() {
       bgColor: "from-pink-500/10 to-rose-500/10"
     },
     {
-      icon: Star,
-      value: "4.9",
-      label: "Average Rating",
-      description: "Customer Reviews",
-      color: "from-yellow-400 to-orange-500",
-      bgColor: "from-yellow-500/10 to-orange-500/10"
-    },
-    {
       icon: Users,
-      value: "50+",
-      label: "Artisans",
-      description: "Skilled Craftsmen",
+      value: "2",
+      label: "Owners",
+      description: "Founders & Craftsmen",
       color: "from-blue-400 to-cyan-500",
       bgColor: "from-blue-500/10 to-cyan-500/10"
-    },
-    {
-      icon: Award,
-      value: "2024",
-      label: "Eco Award",
-      description: "Winner",
-      color: "from-purple-400 to-violet-500",
-      bgColor: "from-purple-500/10 to-violet-500/10"
     },
     {
       icon: Leaf,
@@ -148,7 +132,7 @@ export function SocialProof() {
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                <span>Lifetime Warranty</span>
+                <span>Handmade Quality</span>
               </div>
             </div>
           </div>
