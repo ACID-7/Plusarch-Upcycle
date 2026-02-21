@@ -10,7 +10,7 @@ export default function TermsPage() {
           Product availability, pricing, and delivery timelines may change. We will confirm final details directly with you.
         </p>
         <p>
-          Custom orders are handled case-by-case and may require additional clarification before confirmation.
+          Questions sent through our inquiry and support channels may require additional clarification before final confirmation.
         </p>
         <p>
           For questions about these terms, use the Contact page.

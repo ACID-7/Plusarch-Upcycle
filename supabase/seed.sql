@@ -118,8 +118,8 @@ VALUES (
         3
     ),
     (
-        'Do you offer custom orders?',
-        'Yes! We love creating custom pieces. Contact us through our custom order form or WhatsApp to discuss your vision, budget, and timeline.',
+        'How can I request product guidance?',
+        'Contact us through the inquiry form or WhatsApp and we will help you choose from available products based on your needs and budget.',
         4
     ),
     (

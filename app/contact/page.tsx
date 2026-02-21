@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Phone, Mail, Instagram, Clock, Globe2, MessageCircle, Upload } from 'lucide-react'
+import { Phone, Mail, Instagram, Clock, Globe2, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth'
 import { toast } from '@/hooks/use-toast'
@@ -41,8 +41,6 @@ export default function ContactPage() {
   })
 
   const [submittingInquiry, setSubmittingInquiry] = useState(false)
-  const [submittingCustom, setSubmittingCustom] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [inquiryCooldownRemaining, setInquiryCooldownRemaining] = useState(0)
 
   const [inquiry, setInquiry] = useState({
@@ -51,18 +49,6 @@ export default function ContactPage() {
     phone: '',
     subject: '',
     message: '',
-  })
-
-  const [customOrder, setCustomOrder] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    style: '',
-    colors: '',
-    budgetRange: '',
-    deadline: '',
-    notes: '',
-    referenceImageUrl: '',
   })
 
   useEffect(() => {
@@ -111,7 +97,6 @@ export default function ContactPage() {
       const email = user.email || ''
 
       setInquiry(prev => ({ ...prev, fullName: name, phone, email }))
-      setCustomOrder(prev => ({ ...prev, fullName: name, phone, email }))
     }
 
     async function hydrateInquiryCooldown() {
@@ -195,30 +180,6 @@ export default function ContactPage() {
     window.open(instagram, '_blank', 'noopener,noreferrer')
   }
 
-  const uploadReferenceImage = async (file: File) => {
-    if (!user) return null
-    setUploadingImage(true)
-    const safeName = file.name.replace(/\s+/g, '-').toLowerCase()
-    const path = `${user.id}/${Date.now()}-${safeName}`
-
-    const { error } = await supabase.storage
-      .from('custom-order-images')
-      .upload(path, file, { upsert: false })
-    setUploadingImage(false)
-
-    if (error) {
-      toast({
-        title: 'Image upload failed',
-        description: 'You can still submit using an image URL.',
-        variant: 'destructive',
-      })
-      return null
-    }
-
-    const { data } = supabase.storage.from('custom-order-images').getPublicUrl(path)
-    return data.publicUrl
-  }
-
   const submitInquiry = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
@@ -294,82 +255,13 @@ export default function ContactPage() {
     })
   }
 
-  const submitCustomOrder = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user) return
-
-    setSubmittingCustom(true)
-    const notesWithContact = [
-      `Name: ${customOrder.fullName}`,
-      `Email: ${customOrder.email}`,
-      customOrder.phone ? `Phone: ${customOrder.phone}` : null,
-      '',
-      customOrder.notes,
-    ].filter(Boolean).join('\n')
-
-    const primaryPayload = {
-      user_id: user.id,
-      style: customOrder.style.trim() || null,
-      colors: customOrder.colors.trim() || null,
-      budget_range: customOrder.budgetRange.trim() || null,
-      deadline: customOrder.deadline || null,
-      notes: notesWithContact.trim() || null,
-      status: 'new' as const,
-    }
-
-    let { data: created, error } = await supabase
-      .from('custom_orders')
-      .insert(primaryPayload)
-      .select('id')
-      .single()
-
-    if (error) {
-      const fallback = await supabase
-        .from('custom_orders')
-        .insert({
-          user_id: user.id,
-          notes: notesWithContact.trim() || null,
-        })
-        .select('id')
-        .single()
-
-      created = fallback.data
-      error = fallback.error
-    }
-
-    if (error || !created) {
-      setSubmittingCustom(false)
-      toast({ title: 'Custom order failed', description: error?.message || 'Please try again.', variant: 'destructive' })
-      return
-    }
-
-    if (customOrder.referenceImageUrl.trim()) {
-      await supabase.from('custom_order_images').insert({
-        custom_order_id: created.id,
-        path: customOrder.referenceImageUrl.trim(),
-      })
-    }
-
-    setSubmittingCustom(false)
-    setCustomOrder(prev => ({
-      ...prev,
-      style: '',
-      colors: '',
-      budgetRange: '',
-      deadline: '',
-      notes: '',
-      referenceImageUrl: '',
-    }))
-    toast({ title: 'Custom order submitted', description: 'Thanks. We will contact you with next steps.' })
-  }
-
   return (
     <div className="container mx-auto px-4 py-12 md:py-16 space-y-8 md:space-y-10">
       <div className="rounded-3xl border border-emerald-900/60 bg-gradient-to-r from-[rgba(8,18,13,0.9)] via-[rgba(9,26,18,0.92)] to-[rgba(8,18,13,0.9)] shadow-2xl shadow-emerald-950/40 p-6 md:p-12">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Talk to us</p>
-            <h1 className="text-3xl md:text-5xl font-bold text-white">Concierge for custom, care, and rapid updates.</h1>
+            <h1 className="text-3xl md:text-5xl font-bold text-white">Concierge for care and rapid updates.</h1>
             <p className="text-emerald-100/80 text-base md:text-lg max-w-3xl">
               Reach our team online for material options, sizing help, and shipping guidance for your country.
             </p>
@@ -453,7 +345,7 @@ export default function ContactPage() {
       {!user && (
         <Card className="border border-emerald-900/50 bg-white/5">
           <CardHeader>
-            <CardTitle className="text-white">Sign in required for inquiries and custom orders</CardTitle>
+            <CardTitle className="text-white">Sign in required for inquiries</CardTitle>
             <CardDescription className="text-emerald-100/70">
               To reduce spam and keep conversations trackable, only verified users can submit forms and use live chat.
             </CardDescription>
@@ -467,7 +359,7 @@ export default function ContactPage() {
       )}
 
       {user && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <Card className="border border-emerald-900/50 bg-white/5">
             <CardHeader>
               <CardTitle className="text-white">Inquiry Form</CardTitle>
@@ -541,128 +433,6 @@ export default function ContactPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-emerald-900/50 bg-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">Custom Order Request</CardTitle>
-              <CardDescription className="text-emerald-100/70">
-                Share style preferences, budget, deadline, and reference image.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={submitCustomOrder} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="custom-name">Full name</Label>
-                    <Input
-                      id="custom-name"
-                      value={customOrder.fullName}
-                      onChange={(e) => setCustomOrder(prev => ({ ...prev, fullName: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="custom-email">Email</Label>
-                    <Input
-                      id="custom-email"
-                      type="email"
-                      value={customOrder.email}
-                      onChange={(e) => setCustomOrder(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="custom-phone">Phone (optional)</Label>
-                  <Input
-                    id="custom-phone"
-                    value={customOrder.phone}
-                    onChange={(e) => setCustomOrder(prev => ({ ...prev, phone: e.target.value }))}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="custom-style">Style</Label>
-                    <Input
-                      id="custom-style"
-                      value={customOrder.style}
-                      onChange={(e) => setCustomOrder(prev => ({ ...prev, style: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="custom-colors">Colors</Label>
-                    <Input
-                      id="custom-colors"
-                      value={customOrder.colors}
-                      onChange={(e) => setCustomOrder(prev => ({ ...prev, colors: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="custom-budget">Budget range</Label>
-                    <Input
-                      id="custom-budget"
-                      value={customOrder.budgetRange}
-                      onChange={(e) => setCustomOrder(prev => ({ ...prev, budgetRange: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="custom-deadline">Target deadline</Label>
-                    <Input
-                      id="custom-deadline"
-                      type="date"
-                      value={customOrder.deadline}
-                      onChange={(e) => setCustomOrder(prev => ({ ...prev, deadline: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="custom-notes">Requirements</Label>
-                  <Textarea
-                    id="custom-notes"
-                    value={customOrder.notes}
-                    onChange={(e) => setCustomOrder(prev => ({ ...prev, notes: e.target.value }))}
-                    rows={5}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="custom-image-url">Reference image URL (optional)</Label>
-                  <Input
-                    id="custom-image-url"
-                    value={customOrder.referenceImageUrl}
-                    onChange={(e) => setCustomOrder(prev => ({ ...prev, referenceImageUrl: e.target.value }))}
-                    placeholder="https://..."
-                  />
-                  <div>
-                    <Label htmlFor="custom-upload" className="mb-1 block">Or upload image</Label>
-                    <Input
-                      id="custom-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const url = await uploadReferenceImage(file)
-                        if (url) {
-                          setCustomOrder(prev => ({ ...prev, referenceImageUrl: url }))
-                          toast({ title: 'Image uploaded', description: 'Reference image attached.' })
-                        }
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-emerald-100/70 inline-flex items-center gap-2">
-                    <Upload className="w-3 h-3" />
-                    {uploadingImage ? 'Uploading image...' : 'Upload is optional.'}
-                  </p>
-                </div>
-                <Button type="submit" disabled={submittingCustom || uploadingImage}>
-                  {submittingCustom ? 'Submitting...' : 'Submit Custom Order'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>

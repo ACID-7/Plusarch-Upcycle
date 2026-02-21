@@ -166,7 +166,7 @@ export default function AdminSettingsPage() {
               value={values[AI_FIELD.key]}
               onChange={(e) => setValues({ ...values, [AI_FIELD.key]: e.target.value })}
               className="bg-white/5 border-emerald-900/60 text-white placeholder:text-emerald-200/60"
-              placeholder={'[\n  "Shipping options",\n  "Returns & exchanges",\n  "Care instructions",\n  "Custom orders",\n  "Contact support"\n]'}
+              placeholder={'[\n  "Shipping options",\n  "Returns & exchanges",\n  "Care instructions",\n  "Product availability",\n  "Contact support"\n]'}
               rows={4}
             />
           </div>

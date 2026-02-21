@@ -268,7 +268,7 @@ function detectIntent(message: string):
 
 function generateIntentReply(intent: ReturnType<typeof detectIntent>): string | null {
   if (intent === 'greeting') {
-    return `Hi! I can help with product details, materials, care, shipping, returns, custom orders, and contact options. What would you like to know?`
+    return `Hi! I can help with product details, materials, care, shipping, returns, and contact options. What would you like to know?`
   }
   if (intent === 'shipping') {
     return `We support shipping guidance and delivery-related questions. Delivery timing can vary by location and product, so please confirm final timelines with live chat or WhatsApp.`
@@ -283,7 +283,7 @@ function generateIntentReply(intent: ReturnType<typeof detectIntent>): string | 
     return `For best durability, keep items dry, avoid harsh chemicals, and store them safely after use. If you share the product name, I can give item-specific care tips when available.`
   }
   if (intent === 'custom') {
-    return `Yes, custom design requests are supported. Share your idea, style preferences, and timeline, and the team can guide you through feasibility, pricing, and lead time.`
+    return `Custom order requests are currently unavailable. You can still contact support for product recommendations and available options.`
   }
   if (intent === 'payment') {
     return `Pricing and payment methods can vary by item and region. I can provide general guidance, and our team can confirm final payment and currency details in live chat.`

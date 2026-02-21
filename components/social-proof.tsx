@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Recycle, Heart, Users, Leaf } from 'lucide-react'
+import { Recycle, Heart, Users } from 'lucide-react'
 
 export function SocialProof() {
   const stats = [
@@ -28,14 +28,6 @@ export function SocialProof() {
       description: "Founders & Craftsmen",
       color: "from-blue-400 to-cyan-500",
       bgColor: "from-blue-500/10 to-cyan-500/10"
-    },
-    {
-      icon: Leaf,
-      value: "10K+",
-      label: "Items Upcycled",
-      description: "Waste Reduced",
-      color: "from-teal-400 to-green-500",
-      bgColor: "from-teal-500/10 to-green-500/10"
     }
   ]
 

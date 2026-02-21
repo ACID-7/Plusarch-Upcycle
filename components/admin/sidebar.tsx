@@ -21,7 +21,6 @@ const navigation = [
   { name: 'Gallery', href: '/admin/gallery', icon: Image },
   { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
   { name: 'Inquiries', href: '/admin/inquiries', icon: FileText },
-  { name: 'Custom Orders', href: '/admin/custom-orders', icon: Package },
   { name: 'Live Chat', href: '/admin/chat', icon: MessageSquare },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
   { name: 'Users', href: '/admin/users', icon: Users },

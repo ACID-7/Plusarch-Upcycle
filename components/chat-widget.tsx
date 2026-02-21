@@ -31,7 +31,7 @@ const DEFAULT_AI_QUICK_REPLIES = [
   'Shipping options',
   'Returns & exchanges',
   'Care instructions',
-  'Custom orders',
+  'Product availability',
   'Contact support',
 ]
 
@@ -49,7 +49,7 @@ export function ChatWidget() {
   const [aiQuickReplies, setAiQuickReplies] = useState<string[]>(DEFAULT_AI_QUICK_REPLIES)
   const [statusNote, setStatusNote] = useState('You are connected to a live specialist.')
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const quickReplies = ['Order details', 'Custom design request', 'Shipping info', 'Care instructions']
+  const quickReplies = ['Order details', 'Product availability', 'Shipping info', 'Care instructions']
 
   const supabase = createClient()
 

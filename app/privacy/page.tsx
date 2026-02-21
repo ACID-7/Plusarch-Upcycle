@@ -4,7 +4,7 @@ export default function PrivacyPage() {
       <h1 className="text-3xl font-bold text-white mb-4">Privacy Policy</h1>
       <div className="space-y-4 text-emerald-100/85 leading-relaxed">
         <p>
-          We collect only the information needed to process inquiries, custom orders, and customer support.
+          We collect only the information needed to process inquiries, orders, and customer support.
         </p>
         <p>
           Data may include your name, email, phone number, message content, and order details submitted through the website.

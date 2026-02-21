@@ -74,7 +74,7 @@ export default function FAQPage() {
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-emerald-800/60 px-3 py-1 text-xs text-emerald-100/80">
                 <Sparkles className="w-4 h-4" />
-                Certified upcycled materials
+                Sustainable materials
               </span>
               <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-emerald-800/60 px-3 py-1 text-xs text-emerald-100/80">
                 <MessageCircle className="w-4 h-4" />

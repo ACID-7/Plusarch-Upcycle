@@ -17,7 +17,7 @@ A full-stack web application for an eco-friendly jewelry brand featuring custome
 - ✅ Live chat with realtime messaging
 - ✅ AI chatbot with RAG from database
 - ✅ Product catalog with categories
-- ✅ Inquiry and custom order forms
+- ✅ Inquiry form
 - ✅ Gallery management
 - ✅ FAQ system
 - ✅ Responsive design
@@ -175,7 +175,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Admin Panel
 
 - CRUD operations for products, categories, FAQs
-- Inquiry and custom order management
+- Inquiry management
 - Site settings management
 - User moderation tools
 
@@ -185,7 +185,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `/api/chat/send` - Send chat message
 - `/api/ai/chat` - AI chatbot endpoint
 - `/api/inquiry` - Submit inquiry
-- `/api/custom-order` - Submit custom order
 
 ## Database Schema
 
@@ -199,3 +198,6 @@ See `supabase/migrations/20240123000000_initial_schema.sql` for the complete sch
 4. Test thoroughly
 5. Submit a pull request
 
+## License
+
+This project is licensed under the MIT License.
