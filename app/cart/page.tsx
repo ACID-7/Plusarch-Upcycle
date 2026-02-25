@@ -64,6 +64,47 @@ export default function CartPage() {
   const handleCheckout = async () => {
     setIsCheckingOut(true)
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        throw new Error('You must be logged in to checkout.')
+      }
+
+      const { data: createdOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user.id,
+          total_amount_lkr: total,
+          status: 'pending',
+          payment_method: 'whatsapp',
+          payment_status: 'pending',
+        })
+        .select('id')
+        .single()
+
+      if (orderError || !createdOrder) {
+        throw orderError || new Error('Failed to create order.')
+      }
+
+      const { error: orderItemsError } = await supabase.from('order_items').insert(
+        items.map((item) => ({
+          order_id: createdOrder.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_lkr: item.product.price_lkr,
+        }))
+      )
+
+      if (orderItemsError) {
+        await supabase.from('orders').delete().eq('id', createdOrder.id)
+        throw orderItemsError
+      }
+
+      await clearCart()
+
       const { data: setting } = await supabase
         .from('site_settings')
         .select('value')
@@ -85,13 +126,13 @@ export default function CartPage() {
         .join('\n')
 
       const message = encodeURIComponent(
-        `Hi Plus Arch, I want to place this order:\n\n${itemLines}\n\nSubtotal: LKR ${total.toLocaleString()}\nEstimated total: LKR ${(total * 1.08).toLocaleString()}`
+        `Hi Plus Arch, I placed order #${createdOrder.id}:\n\n${itemLines}\n\nItems total: LKR ${total.toLocaleString()}\nDelivery fee: Please confirm based on my location.`
       )
 
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
       toast({
-        title: "Checkout started",
-        description: "We opened WhatsApp with your order summary.",
+        title: "Order saved",
+        description: "Your order was added to My Orders and cart was cleared.",
       })
     } catch {
       toast({
@@ -259,19 +300,14 @@ export default function CartPage() {
               </div>
 
               <div className="flex justify-between text-gray-300">
-                <span>Shipping</span>
-                <span className="text-green-400">Free</span>
-              </div>
-
-              <div className="flex justify-between text-gray-300">
-                <span>Tax</span>
-                <span>LKR {(total * 0.08).toLocaleString()}</span>
+                <span>Delivery</span>
+                <span className="text-emerald-200/80">Confirmed in WhatsApp by location</span>
               </div>
 
               <div className="border-t border-white/10 pt-4">
                 <div className="flex justify-between text-xl font-bold text-white">
-                  <span>Total</span>
-                  <span className="text-green-400">LKR {(total * 1.08).toLocaleString()}</span>
+                  <span>Items Total</span>
+                  <span className="text-green-400">LKR {total.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -294,7 +330,7 @@ export default function CartPage() {
             </motion.button>
 
             <p className="text-xs text-gray-400 text-center mt-4">
-              Secure checkout powered by industry-standard encryption
+              Delivery fee is confirmed in WhatsApp chat based on your location.
             </p>
           </motion.div>
         </div>

@@ -126,19 +126,24 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-200">Connect</h4>
             <div className="space-y-2 text-sm">
-              <a href={`mailto:${email}`} className="inline-flex items-center gap-2 text-emerald-100/80 hover:text-emerald-300">
-                <Mail className="h-4 w-4" />
-                {email}
-              </a>
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-700/60 bg-emerald-500/10 px-3 py-1.5 text-emerald-100 hover:border-emerald-400/70 hover:text-emerald-200"
-              >
-                <MessageCircle className="h-4 w-4 shrink-0" />
-                WhatsApp support
-              </a>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`mailto:${email}`}
+                  className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-700/60 bg-white/5 px-3 py-1.5 text-emerald-100/90 hover:border-emerald-400/70 hover:text-emerald-200"
+                >
+                  <Mail className="h-4 w-4" />
+                  {email}
+                </a>
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-700/60 bg-emerald-500/10 px-3 py-1.5 text-emerald-100 hover:border-emerald-400/70 hover:text-emerald-200"
+                >
+                  <MessageCircle className="h-4 w-4 shrink-0" />
+                  WhatsApp support
+                </a>
+              </div>
               <p className="inline-flex items-center gap-2 text-emerald-100/70">
                 <Phone className="h-4 w-4" />
                 +94 77 444 2642
