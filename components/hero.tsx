@@ -171,21 +171,6 @@ export function Hero() {
               </motion.div>
             </Link>
 
-            <Link href="/contact">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 backdrop-blur-sm font-semibold px-8 py-3 rounded-full transition-all duration-300"
-                >
-                  Custom Order
-                </Button>
-              </motion.div>
-            </Link>
-
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Leaf, Recycle, Globe2, Sparkles } from 'lucide-react'
 
 export default function AboutPage() {
   const [content, setContent] = useState({
@@ -52,22 +51,6 @@ export default function AboutPage() {
             <p className="text-emerald-100/80 text-lg">
               We blend Sri Lankan craftsmanship with circular design principles to create pieces that can travel anywhere and last for years.
             </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 w-full md:w-72">
-            {[
-              { label: 'Reclaimed metals', value: '82%', icon: Recycle },
-              { label: 'Local artisans', value: '14', icon: Sparkles },
-              { label: 'Countries shipped', value: '22', icon: Globe2 },
-              { label: 'Avg. CO₂ saved', value: '1.8kg', icon: Leaf },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-emerald-900/60 bg-white/5 p-3">
-                <div className="flex items-center gap-2 text-emerald-200">
-                  <stat.icon className="w-4 h-4" />
-                  <span className="text-[11px] uppercase tracking-wide text-emerald-100/70">{stat.label}</span>
-                </div>
-                <p className="text-2xl font-semibold text-white mt-1">{stat.value}</p>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -122,3 +105,4 @@ export default function AboutPage() {
     </div>
   )
 }
+

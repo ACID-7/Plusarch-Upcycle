@@ -97,38 +97,6 @@ export function SocialProof() {
           ))}
         </div>
 
-        {/* Call to action */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.8 }}
-          className="text-center mt-16"
-        >
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Ready to Make a Difference?
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Every purchase supports sustainable fashion and helps reduce textile waste.
-              Join our community of conscious consumers today.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-300">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span>Carbon Neutral Shipping</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span>30-Day Returns</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                <span>Handmade Quality</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   )
