@@ -1,44 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-
 export default function AboutPage() {
-  const [content, setContent] = useState({
-    mission: '',
-    upcycling_process: '',
-    materials_sustainability: '',
-    environmental_impact: '',
-  })
-
-  const supabase = createClient()
-
-  useEffect(() => {
-    async function fetchContent() {
-      const keys = ['mission', 'upcycling_process', 'materials_sustainability', 'environmental_impact']
-      const promises = keys.map(key =>
-        supabase
-          .from('site_settings')
-          .select('value')
-          .eq('key', key)
-          .single()
-      )
-
-      const results = await Promise.all(promises)
-
-      const newContent: any = {}
-      results.forEach((result, index) => {
-        if (result.data) {
-          newContent[keys[index]] = result.data.value.replace(/"/g, '')
-        }
-      })
-
-      setContent(newContent)
-    }
-
-    fetchContent()
-  }, [])
-
   return (
     <div className="container mx-auto px-4 py-16 space-y-12">
       <div className="rounded-3xl border border-emerald-900/60 bg-gradient-to-r from-[rgba(8,18,13,0.9)] via-[rgba(9,26,18,0.92)] to-[rgba(8,18,13,0.9)] shadow-2xl shadow-emerald-950/40 p-10 md:p-12">
@@ -57,10 +19,10 @@ export default function AboutPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {[
-          { title: 'Our Mission', body: content.mission || 'At Plus Arch, we give materials a second life and build a new aesthetic for circular luxury.' },
-          { title: 'Upcycling Process', body: content.upcycling_process || 'We recover metals and textiles, melt, weave, and finish them with low-impact techniques in small batches.' },
-          { title: 'Materials & Sustainability', body: content.materials_sustainability || 'We source locally where possible, trace suppliers, and keep everything recyclable or renewable.' },
-          { title: 'Environmental Impact', body: content.environmental_impact || 'Choosing upcycled pieces keeps waste out of landfills and reduces the need for virgin mining.' },
+          { title: 'Our Mission', body: 'At Plus Arch, we give materials a second life and build a new aesthetic for circular luxury.' },
+          { title: 'Upcycling Process', body: 'We recover metals and textiles, melt, weave, and finish them with low-impact techniques in small batches.' },
+          { title: 'Materials & Sustainability', body: 'We source locally where possible, trace suppliers, and keep everything recyclable or renewable.' },
+          { title: 'Environmental Impact', body: 'Choosing upcycled pieces keeps waste out of landfills and reduces the need for virgin mining.' },
         ].map((section) => (
           <div
             key={section.title}

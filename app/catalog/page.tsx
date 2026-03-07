@@ -34,9 +34,6 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [currency, setCurrency] = useState<'LKR' | 'USD'>('LKR')
-  const [usdRate, setUsdRate] = useState(0.003) // LKR -> USD
-  const [usdToLkr, setUsdToLkr] = useState(330) // USD -> LKR
 
   const supabase = createClient()
   const { addItem: addToCart } = useCart()
@@ -68,28 +65,6 @@ export default function CatalogPage() {
 
       if (productsData) setProducts(productsData)
 
-      // Fetch USD rate
-      const { data: rateData } = await supabase
-        .from('site_settings')
-        .select('key, value')
-        .in('key', ['lkr_to_usd_rate', 'usd_to_lkr_rate'])
-
-      if (rateData) {
-        const map = Object.fromEntries(rateData.map((r: any) => [r.key, parseFloat(r.value)]))
-        if (map.lkr_to_usd_rate) setUsdRate(map.lkr_to_usd_rate)
-        if (map.usd_to_lkr_rate) setUsdToLkr(map.usd_to_lkr_rate)
-      }
-
-      // Refresh rate daily via API (server stores in site_settings)
-      try {
-        const res = await fetch('/api/rates/update')
-        const json = await res.json()
-        if (json?.lkr_to_usd_rate) setUsdRate(json.lkr_to_usd_rate)
-        if (json?.usd_to_lkr_rate) setUsdToLkr(json.usd_to_lkr_rate)
-      } catch (e) {
-        // silent fail; keep existing rate
-      }
-
       setLoading(false)
     }
 
@@ -101,16 +76,6 @@ export default function CatalogPage() {
     const matchesCategory = selectedCategory === 'all' || product.categories?.[0]?.name === selectedCategory
     return matchesSearch && matchesCategory
   })
-
-  const formatPrice = (priceLkr: number) => {
-    if (currency === 'USD') {
-      if (usdToLkr > 0) {
-        return `$${(priceLkr / usdToLkr).toFixed(2)}`
-      }
-      return `$${(priceLkr * usdRate).toFixed(2)}`
-    }
-    return `LKR ${priceLkr.toLocaleString()}`
-  }
 
   const handleAddToCart = async (productId: string, productName: string) => {
     try {
@@ -208,15 +173,6 @@ export default function CatalogPage() {
           </SelectContent>
         </Select>
 
-        <Select value={currency} onValueChange={(value: 'LKR' | 'USD') => setCurrency(value)}>
-          <SelectTrigger className="md:w-1/4">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LKR">LKR</SelectItem>
-            <SelectItem value="USD">USD</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Products Grid */}
@@ -313,7 +269,7 @@ export default function CatalogPage() {
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <span className="text-2xl font-bold text-green-400">
-                    {formatPrice(product.price_lkr)}
+                    LKR {product.price_lkr.toLocaleString()}
                   </span>
 
                   <motion.button

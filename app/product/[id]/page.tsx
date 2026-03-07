@@ -23,25 +23,9 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
-  const [usdRate, setUsdRate] = useState(0.003)
   const [whatsappNumber, setWhatsappNumber] = useState('94774442642')
 
   const supabase = createClient()
-
-  const parseSettingNumber = (value: unknown) => {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0
-    if (typeof value === 'string') {
-      const direct = Number.parseFloat(value)
-      if (Number.isFinite(direct)) return direct
-      try {
-        const parsed = JSON.parse(value)
-        return parseSettingNumber(parsed)
-      } catch {
-        return 0
-      }
-    }
-    return 0
-  }
 
   useEffect(() => {
     async function fetchProduct() {
@@ -65,28 +49,6 @@ export default function ProductPage() {
       if (!error && data) {
         setProduct(data)
         data.product_images.sort((a, b) => a.sort_order - b.sort_order)
-      }
-
-      // Fetch rates/settings
-      const { data: rateData } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'lkr_to_usd_rate')
-        .maybeSingle()
-
-      const parsedLkrToUsd = parseSettingNumber(rateData?.value)
-      if (parsedLkrToUsd > 0) {
-        setUsdRate(parsedLkrToUsd)
-      } else {
-        const { data: reverseRateData } = await supabase
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'usd_to_lkr_rate')
-          .maybeSingle()
-        const parsedUsdToLkr = parseSettingNumber(reverseRateData?.value)
-        if (parsedUsdToLkr > 0) {
-          setUsdRate(1 / parsedUsdToLkr)
-        }
       }
 
       const { data: whatsappData } = await supabase
@@ -202,7 +164,6 @@ export default function ProductPage() {
             <p className="text-2xl font-semibold">
               LKR {product.price_lkr.toLocaleString()}
             </p>
-            <p className="text-muted-foreground">~ ${(product.price_lkr * usdRate).toFixed(2)} USD</p>
           </div>
 
           {product.description && (

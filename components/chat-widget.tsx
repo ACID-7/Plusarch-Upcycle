@@ -27,11 +27,17 @@ interface OpenChatDetail {
   prefill?: string
 }
 
+interface AiHistoryMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 const DEFAULT_AI_QUICK_REPLIES = [
+  'Show rings',
+  'Show necklaces',
   'Shipping options',
-  'Returns & exchanges',
+  'Return policy',
   'Care instructions',
-  'Product availability',
   'Contact support',
 ]
 
@@ -46,7 +52,6 @@ export function ChatWidget() {
   const [chatMode, setChatMode] = useState<'live' | 'ai'>('live')
   const [aiMessages, setAiMessages] = useState<Message[]>([])
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiQuickReplies, setAiQuickReplies] = useState<string[]>(DEFAULT_AI_QUICK_REPLIES)
   const [statusNote, setStatusNote] = useState('You are connected to a live specialist.')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const quickReplies = ['Order details', 'Product availability', 'Shipping info', 'Care instructions']
@@ -60,7 +65,7 @@ export function ChatWidget() {
       setChatMode(mode)
       setStatusNote(
         mode === 'ai'
-          ? 'AI assistant is ready. Verify final order details in live chat or WhatsApp.'
+          ? 'AI assistant is ready. Ask anything about products, shipping, returns, and support.'
           : user
             ? 'You are connected to a live specialist.'
             : 'Sign in to start live chat with a specialist.'
@@ -84,11 +89,6 @@ export function ChatWidget() {
     if (!isOpen || !user || chatMode !== 'live') return
     initializeChat()
   }, [isOpen, user, chatMode])
-
-  useEffect(() => {
-    if (!user) return
-    loadAiQuickReplies()
-  }, [user?.id])
 
   useEffect(() => {
     if (!conversation) return
@@ -159,59 +159,17 @@ export function ChatWidget() {
     if (data) setMessages(data)
   }
 
-  const loadAiQuickReplies = async () => {
-    const { data } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', 'ai_quick_replies')
-      .maybeSingle()
-
-    const raw = data?.value
-    if (!raw) {
-      setAiQuickReplies(DEFAULT_AI_QUICK_REPLIES)
-      return
-    }
-
-    let parsed: unknown = raw
-    if (typeof raw === 'string') {
-      try {
-        parsed = JSON.parse(raw)
-      } catch {
-        parsed = raw
-      }
-    }
-
-    if (Array.isArray(parsed)) {
-      const cleaned = parsed
-        .map((item) => (typeof item === 'string' ? item.trim() : ''))
-        .filter((item) => item.length > 0)
-        .slice(0, 8)
-      setAiQuickReplies(cleaned.length > 0 ? cleaned : DEFAULT_AI_QUICK_REPLIES)
-      return
-    }
-
-    if (typeof parsed === 'string') {
-      const cleaned = parsed
-        .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0)
-        .slice(0, 8)
-      setAiQuickReplies(cleaned.length > 0 ? cleaned : DEFAULT_AI_QUICK_REPLIES)
-      return
-    }
-
-    setAiQuickReplies(DEFAULT_AI_QUICK_REPLIES)
-  }
-
   const sendMessage = async (messageOverride?: string) => {
     const messageToSend = (messageOverride ?? newMessage).trim()
-    if (!messageToSend || !user) return
+    if (!messageToSend) return
 
     if (chatMode === 'ai') {
+      if (aiLoading) return
       await sendAiMessage(messageToSend)
       return
     }
 
+    if (!user || loading) return
     setLoading(true)
 
     if (conversation) {
@@ -234,6 +192,14 @@ export function ChatWidget() {
   }
 
   const sendAiMessage = async (messageToSend: string) => {
+    const history: AiHistoryMessage[] = aiMessages
+      .slice(-10)
+      .map((item): AiHistoryMessage => ({
+        role: item.sender_type === 'user' ? 'user' : 'assistant',
+        content: item.body,
+      }))
+      .filter((item) => item.content.trim().length > 0)
+
     const now = new Date().toISOString()
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -250,7 +216,7 @@ export function ChatWidget() {
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageToSend }),
+        body: JSON.stringify({ message: messageToSend, history }),
       })
 
       const payload = await response.json().catch(() => ({}))
@@ -373,7 +339,11 @@ export function ChatWidget() {
                     type="button"
                     onClick={() => {
                       setChatMode('live')
-                      setStatusNote('You are connected to a live specialist.')
+                      setStatusNote(
+                        user
+                          ? 'You are connected to a live specialist.'
+                          : 'Sign in to start live chat with a specialist.'
+                      )
                     }}
                     className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
                       chatMode === 'live'
@@ -387,7 +357,7 @@ export function ChatWidget() {
                     type="button"
                     onClick={() => {
                       setChatMode('ai')
-                      setStatusNote('AI assistant is ready. Verify final order details in live chat or WhatsApp.')
+                      setStatusNote('AI assistant is ready. Ask anything about products, shipping, returns, and support.')
                     }}
                     className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
                       chatMode === 'ai'
@@ -478,7 +448,7 @@ export function ChatWidget() {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type your message..."
-                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                         disabled={loading || !user}
                         className="bg-white/5 border-emerald-900/60 text-white placeholder:text-emerald-200/60"
                       />
@@ -496,12 +466,12 @@ export function ChatWidget() {
                     <div className="mb-3 rounded-xl border border-emerald-900/50 bg-white/5 p-3 text-xs text-emerald-100/85">
                       <div className="flex items-center gap-2 text-emerald-200">
                         <Sparkles className="h-4 w-4" />
-                        <span>Ask about products, materials, care, and shipping basics.</span>
+                        <span>Get quick answers on products, shipping, returns, care, and contact details.</span>
                       </div>
                     </div>
 
                     <div className="chat-scrollbar mb-2 flex gap-2 overflow-x-auto pb-1">
-                      {aiQuickReplies.map((reply) => (
+                      {DEFAULT_AI_QUICK_REPLIES.map((reply) => (
                         <button
                           key={reply}
                           type="button"
@@ -562,7 +532,7 @@ export function ChatWidget() {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Ask the AI assistant..."
-                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                         disabled={aiLoading}
                         className="bg-white/5 border-emerald-900/60 text-white placeholder:text-emerald-200/60"
                       />

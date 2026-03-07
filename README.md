@@ -64,6 +64,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # Optional - for AI chatbot
 AI_PROVIDER_BASE_URL=https://api.openai.com/v1
 AI_PROVIDER_API_KEY=your_openai_api_key
+AI_PROVIDER_MODEL=gpt-3.5-turbo
 
 SITE_URL=http://localhost:3000
 ```

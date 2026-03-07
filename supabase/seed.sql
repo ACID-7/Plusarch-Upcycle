@@ -149,24 +149,7 @@ VALUES ('whatsapp_number', '"+94 774442642"'),
         'business_hours',
         '"Mon-Fri: 9AM-6PM, Sat: 10AM-4PM"'
     ),
-    ('lkr_to_usd_rate', '0.003'),
-    ('operator_available', 'true'),
-    (
-        'mission',
-        '"At Plusarch Upcycle, we believe in giving materials a second life. Every piece tells a story of transformation and sustainability."'
-    ),
-    (
-        'upcycling_process',
-        '"Our upcycling process involves carefully selecting discarded materials, cleaning and preparing them, then handcrafting them into beautiful, functional jewelry pieces."'
-    ),
-    (
-        'materials_sustainability',
-        '"We source materials from responsible suppliers, focusing on recycled metals, upcycled crystals, and sustainable alternatives to traditional materials."'
-    ),
-    (
-        'environmental_impact',
-        '"By choosing upcycled jewelry, you''re helping reduce waste in landfills and supporting sustainable fashion. Each purchase contributes to a more circular economy."'
-    );
+    ('operator_available', 'true');
 -- Insert sample gallery items (placeholder paths)
 INSERT INTO gallery_items (path, caption, sort_order)
 VALUES (
