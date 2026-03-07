@@ -201,4 +201,4 @@ See `supabase/migrations/20240123000000_initial_schema.sql` for the complete sch
 
 ## License
 
-This project is licensed under the MIT License.
+All rights reserved. © 2025 CS23.
