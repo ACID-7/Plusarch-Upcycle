@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import path from 'path'
+import fs from 'fs'
 
 type FaqRow = {
   question: string | null
@@ -155,15 +157,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ response: makeConciseAnswer(deterministicResponse) })
     }
 
-    const snippets = [
+    // For product intent we only use catalog (checked products). For everything else we use dataset + catalog + FAQs.
+    const datasetSnippets =
+      primaryIntent === 'product'
+        ? []
+        : getDatasetSnippets(normalizedLower, keywords, 14)
+    const catalogAndProductSnippets = [
       ...catalogMatches.map((product) => formatCatalogMatchSnippet(product, normalizedLower)),
-      ...faqResults.map((faq) => `FAQ: ${faq.question || ''} - ${faq.answer || ''}`.trim()),
       ...productResults.map(
         (product) =>
           `Product: ${product.name || ''} - ${product.description || ''} Materials: ${product.materials || ''} Care: ${product.care || ''}`.trim()
       ),
+    ]
+    const faqSnippets = faqResults.map((faq) => `FAQ: ${faq.question || ''} - ${faq.answer || ''}`.trim())
+    const snippets = [
+      ...datasetSnippets,
+      ...catalogAndProductSnippets,
+      ...faqSnippets,
     ].filter(Boolean) as string[]
-    const rankedSnippets = rankSnippets(snippets, keywords, normalizedLower).slice(0, 8)
+    const rankedSnippets = rankSnippets(snippets, keywords, normalizedLower).slice(0, 12)
 
     const llmAnswer = await tryLlmAnswer({
       message: normalizedMessage,
@@ -175,9 +187,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ response: makeConciseAnswer(polishResponseText(llmAnswer)) })
     }
 
+    const baseUrl = process.env.AI_PROVIDER_BASE_URL
+    const ollamaHint =
+      baseUrl && isOllamaUrl(baseUrl)
+        ? ' The local AI (Ollama) did not respond. Check that Ollama is running and you have pulled the model (e.g. ollama pull llama3.2:3b).'
+        : ''
+
     return NextResponse.json({
       response: makeConciseAnswer(
-        'I can help with product details, care, shipping, returns, and contact support. Please ask a specific question.'
+        'I can help with product details, care, shipping, returns, and contact support. Please ask a specific question.' +
+          ollamaHint
       ),
     })
   } catch (error) {
@@ -237,6 +256,68 @@ function rankSnippets(snippets: string[], keywords: string[], messageLower: stri
     })
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.snippet)
+}
+
+type DatasetPair = { intent?: string; question?: string; answer?: string }
+let datasetCache: DatasetPair[] | null = null
+
+function loadFaqDataset(): DatasetPair[] {
+  if (datasetCache) return datasetCache
+  try {
+    const p = path.join(process.cwd(), 'data', 'ai-training', 'faq-dataset.json')
+    if (!fs.existsSync(p)) return []
+    const raw = fs.readFileSync(p, 'utf8')
+    const data = JSON.parse(raw) as { pairs?: DatasetPair[] }
+    const pairs = data.pairs ?? []
+    datasetCache = pairs.filter((x) => x?.question && x?.answer)
+    return datasetCache
+  } catch {
+    return []
+  }
+}
+
+function getDatasetSnippets(messageLower: string, keywords: string[], limit: number): string[] {
+  const pairs = loadFaqDataset()
+  if (pairs.length === 0) return []
+  const safeKeywords = keywords.length > 0 ? keywords : extractKeywords(messageLower)
+  const scored = pairs.map((p) => {
+    const text = `${p.question ?? ''} ${p.answer ?? ''}`.toLowerCase()
+    const score = safeKeywords.reduce((total, k) => total + (text.includes(k) ? 1 : 0), 0)
+    return { pair: p, score }
+  })
+  const withScore = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score)
+  const fallback = scored.slice(0, limit).map((x) => x.pair)
+  const chosen = withScore.length > 0 ? withScore : fallback.map((p) => ({ pair: p, score: 0 }))
+  return chosen.slice(0, limit).map((x) => `FAQ: ${x.pair.question ?? ''} - ${x.pair.answer ?? ''}`.trim())
+}
+
+/** Get one answer from the local dataset for a given intent (e.g. returns, shipping, greeting). */
+function getDatasetAnswerForIntent(intent: Intent, messageLower: string): string | null {
+  const pairs = loadFaqDataset()
+  if (pairs.length === 0) return null
+  const intentMatch = (p: DatasetPair) => (p.intent ?? '').toLowerCase() === intent
+  const forIntent = pairs.filter((p) => intentMatch(p) && p.answer?.trim())
+  if (forIntent.length > 0) {
+    const keywords = extractKeywords(messageLower)
+    const scored = forIntent.map((p) => {
+      const text = `${p.question ?? ''} ${p.answer ?? ''}`.toLowerCase()
+      const score = keywords.reduce((total, k) => total + (text.includes(k) ? 1 : 0), 0)
+      return { pair: p, score }
+    })
+    const best = scored.sort((a, b) => b.score - a.score)[0] ?? scored[0]
+    return best?.pair?.answer?.trim() ?? null
+  }
+  const keywords = extractKeywords(messageLower)
+  const anyMatch = pairs
+    .filter((p) => p.answer?.trim())
+    .map((p) => {
+      const text = `${p.question ?? ''} ${p.answer ?? ''}`.toLowerCase()
+      const score = keywords.reduce((total, k) => total + (text.includes(k) ? 1 : 0), 0)
+      return { pair: p, score }
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)[0]
+  return anyMatch?.pair?.answer?.trim() ?? null
 }
 
 function findCatalogMatches(products: ProductRow[], messageLower: string): ProductRow[] {
@@ -320,6 +401,8 @@ function generateDeterministicResponse(input: {
   const { intent, message, messageLower, catalogMatches, productResults, faqForIntent, settingsMap } = input
 
   if (intent === 'greeting') {
+    const fromDataset = getDatasetAnswerForIntent('greeting', messageLower)
+    if (fromDataset) return fromDataset
     return 'Hi! I can help with product availability, materials, care, shipping, returns, and contact details.'
   }
 
@@ -329,18 +412,24 @@ function generateDeterministicResponse(input: {
     if (settingsMap.email) bits.push(`Email: ${settingsMap.email}`)
     if (settingsMap.business_hours) bits.push(`Hours: ${settingsMap.business_hours}`)
     if (bits.length > 0) return bits.join(' | ')
+    const fromDataset = getDatasetAnswerForIntent('contact', messageLower)
+    if (fromDataset) return fromDataset
     return 'You can contact support via live chat or WhatsApp.'
   }
 
   if (intent === 'shipping') {
     if (settingsMap.shipping_policy) return settingsMap.shipping_policy
     if (faqForIntent?.answer) return faqForIntent.answer
+    const fromDataset = getDatasetAnswerForIntent('shipping', messageLower)
+    if (fromDataset) return fromDataset
     return 'Shipping time depends on location and item type. Please confirm exact delivery timing in live chat.'
   }
 
   if (intent === 'returns') {
     if (settingsMap.return_policy) return settingsMap.return_policy
     if (faqForIntent?.answer) return faqForIntent.answer
+    const fromDataset = getDatasetAnswerForIntent('returns', messageLower)
+    if (fromDataset) return fromDataset
     return 'Returns and exchanges depend on item condition and timeline. Please contact live chat for exact eligibility.'
   }
 
@@ -351,13 +440,16 @@ function generateDeterministicResponse(input: {
       if (intent === 'care' && top.care) return `${top.name || 'This item'} care: ${top.care}.`
     }
     if (faqForIntent?.answer) return faqForIntent.answer
+    const fromDataset = getDatasetAnswerForIntent(intent, messageLower)
+    if (fromDataset) return fromDataset
     return intent === 'materials'
       ? 'Most pieces use recycled or eco-conscious materials. Ask for a specific product to get exact materials.'
       : 'Care varies by product. Ask with a product name for exact care instructions.'
   }
 
+  // Products: answer only from checked catalog (Supabase), never from dataset.
   if (intent === 'product') {
-    const topMatches = catalogMatches.slice(0, 3)
+    const topMatches = catalogMatches.slice(0, 5)
     if (topMatches.length === 0) {
       return `I could not find "${message}" in the current catalog. Try asking for rings, necklaces, bracelets, or earrings.`
     }
@@ -389,32 +481,41 @@ function generateDeterministicResponse(input: {
   return null
 }
 
+function isFinetunedModel(model: string | undefined): boolean {
+  return Boolean(model && model.startsWith('ft:'))
+}
+
+function isOllamaUrl(url: string | undefined): boolean {
+  if (!url) return false
+  const u = url.toLowerCase()
+  return u.includes('11434') || (u.includes('localhost') && u.includes('ollama'))
+}
+
 async function tryLlmAnswer(input: {
   message: string
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   snippets: string[]
 }): Promise<string | null> {
-  if (!process.env.AI_PROVIDER_API_KEY || !process.env.AI_PROVIDER_BASE_URL) return null
+  const baseUrl = process.env.AI_PROVIDER_BASE_URL?.replace(/\/$/, '')
+  const useOllama = baseUrl && isOllamaUrl(baseUrl)
+  const hasKey = Boolean(process.env.AI_PROVIDER_API_KEY)
+  if (!baseUrl || (!useOllama && !hasKey)) return null
 
   const { message, history, snippets } = input
+  const model = process.env.AI_PROVIDER_MODEL || (useOllama ? 'llama3.2:3b' : 'gpt-3.5-turbo')
+  const useFinetuned = isFinetunedModel(model)
 
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15000)
-    try {
-      const llmResponse = await fetch(process.env.AI_PROVIDER_BASE_URL + '/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.AI_PROVIDER_API_KEY}`,
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: process.env.AI_PROVIDER_MODEL || 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: `You are Plus Arch customer support AI.
+  const systemContent = useOllama
+    ? `You are Plus Arch Upcycle customer support. Answer using ONLY the FAQ and product context below. Reply in 1–3 short sentences. Be friendly and direct. If the context does not contain the answer, say you can help with shipping, returns, materials, care, and products and suggest they ask specifically.
+
+Context:
+${snippets.join('\n\n')}`
+    : useFinetuned
+      ? `You are Plus Arch Upcycle customer support. You were trained on our FAQ (shipping, returns, materials, care, products). Reply in 1–3 short, direct sentences. Use the context below only for live product names/prices or when your training does not cover the question.
+
+Context:
+${snippets.join('\n\n')}`
+      : `You are Plus Arch customer support AI.
 - Reply in max 2 short sentences.
 - Be direct and human.
 - Answer only the asked question.
@@ -422,23 +523,47 @@ async function tryLlmAnswer(input: {
 - If uncertain, say what is unknown and ask one short clarifying question.
 
 Context snippets:
-${snippets.join('\n\n')}`,
-            },
+${snippets.join('\n\n')}`
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (process.env.AI_PROVIDER_API_KEY) headers.Authorization = `Bearer ${process.env.AI_PROVIDER_API_KEY}`
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), useOllama ? 60000 : 15000)
+    try {
+      const llmResponse = await fetch(baseUrl + '/chat/completions', {
+        method: 'POST',
+        headers,
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemContent },
             ...history,
             { role: 'user', content: message },
           ],
-          max_tokens: 220,
+          max_tokens: useOllama ? 320 : useFinetuned ? 280 : 220,
         }),
       })
 
-      if (!llmResponse.ok) return null
+      if (!llmResponse.ok) {
+        if (useOllama) {
+          const errBody = await llmResponse.text()
+          console.error('[AI Chat] Ollama returned', llmResponse.status, errBody)
+        }
+        return null
+      }
       const data = await llmResponse.json()
       const output = data?.choices?.[0]?.message?.content
       return typeof output === 'string' && output.trim() ? output.trim() : null
     } finally {
       clearTimeout(timeout)
     }
-  } catch {
+  } catch (err) {
+    if (useOllama) {
+      console.error('[AI Chat] Ollama request failed. Is Ollama running? Run: ollama pull', model, err)
+    }
     return null
   }
 }
@@ -452,11 +577,19 @@ function makeConciseAnswer(text: string): string {
   if (!cleaned) return ''
 
   const sentences = cleaned.split(/(?<=[.!?])\s+/).filter(Boolean)
-  const firstTwo = sentences.slice(0, 2).join(' ').trim()
-  const source = firstTwo || cleaned
-  const words = source.split(' ').filter(Boolean)
-  if (words.length <= 45) return source
-  return `${words.slice(0, 45).join(' ')}...`
+  if (sentences.length <= 3) return cleaned
+  const taken = sentences.slice(0, 3).join(' ').trim()
+  const wordCount = taken.split(/\s+/).length
+  if (wordCount <= 60) return taken
+  let out = ''
+  let words = 0
+  for (const s of sentences) {
+    const nextWords = s.split(/\s+/).length
+    if (words + nextWords > 60) break
+    out += (out ? ' ' : '') + s
+    words += nextWords
+  }
+  return out.trim() || taken
 }
 
 function dedupeFaqs(rows: FaqRow[]): FaqRow[] {
@@ -522,7 +655,7 @@ function cleanSnippetForDisplay(snippet: string): string {
 }
 
 function detectIntent(message: string): Intent {
-  if (/(^|\s)(hi|hello|hey|good morning|good evening)(\s|$)/i.test(message)) return 'greeting'
+  if (/(^|\s)(hi|hello|hey|howdy|hiya|good morning|good afternoon|good evening|good day|greetings)(\s|$)/i.test(message) || /^(hi|hello|hey|howdy|yo)$/i.test(message.trim())) return 'greeting'
   if (/(shipping|delivery|arrive|dispatch|international|courier|tracking)/i.test(message)) return 'shipping'
   if (/(return|refund|exchange|replace|cancel)/i.test(message)) return 'returns'
   if (/(material|allergy|metal|fabric|eco|sustainab|upcycl)/i.test(message)) return 'materials'
