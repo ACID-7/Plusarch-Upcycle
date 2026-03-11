@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/lib/cart'
 import { useWishlist } from '@/lib/wishlist'
-import { ShoppingCart, Heart, Star, Sparkles, ArrowRight } from 'lucide-react'
+import { ShoppingCart, Heart, Sparkles, ArrowRight } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 interface Product {
@@ -35,7 +35,7 @@ export function FeaturedProducts() {
           price_lkr,
           product_images(path)
         `)
-        .eq('is_featured', true)
+        .eq('status', 'active')
         .limit(6)
 
       if (!error && data) {
@@ -105,7 +105,7 @@ export function FeaturedProducts() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-white mb-4">Featured Collection</h2>
+            <h2 className="text-4xl font-bold text-white mb-4">Our Collection</h2>
             <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full mx-auto"></div>
           </motion.div>
 
@@ -148,7 +148,7 @@ export function FeaturedProducts() {
         >
           <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm rounded-full px-4 py-2 mb-4 border border-green-400/30">
             <Sparkles className="w-4 h-4 text-green-400" />
-            <span className="text-green-400 font-medium text-sm">Featured Collection</span>
+            <span className="text-green-400 font-medium text-sm">Our Collection</span>
           </div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
@@ -229,15 +229,8 @@ export function FeaturedProducts() {
                       </div>
                     </div>
 
-                    {/* Featured badge */}
-                    <div className="absolute top-3 left-3">
-                      <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
-                        <Star className="w-3 h-3" />
-                        <span>FEATURED</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                </div>
+              </Link>
 
                 <div className="p-6">
                   <Link href={`/product/${product.id}`}>

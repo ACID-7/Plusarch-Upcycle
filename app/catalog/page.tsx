@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/lib/cart'
 import { useWishlist } from '@/lib/wishlist'
-import { Heart, ShoppingCart, Star, Sparkles } from 'lucide-react'
+import { Heart, ShoppingCart } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 interface Product {
@@ -240,25 +240,14 @@ export default function CatalogPage() {
                     </div>
                   </div>
 
-                  {/* Featured badge */}
-                  <div className="absolute top-3 left-3">
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
-                      <Sparkles className="w-3 h-3" />
-                      <span>FEATURED</span>
-                    </div>
-                  </div>
                 </div>
               </Link>
 
               <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <span className="text-sm text-gray-400 font-medium">
                     {product.categories?.[0]?.name}
                   </span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-sm text-gray-300">4.8</span>
-                  </div>
                 </div>
 
                 <Link href={`/product/${product.id}`}>

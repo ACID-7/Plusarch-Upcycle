@@ -78,12 +78,6 @@ export default function ProductPage() {
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
   }
 
-  const handleAskAI = () => {
-    const productName = product?.name?.trim()
-    const prefill = productName ? `I need details about "${productName}".` : ''
-    document.dispatchEvent(new CustomEvent('openChat', { detail: { mode: 'ai', prefill } }))
-  }
-
   const handleChatWithPerson = () => {
     const productName = product?.name?.trim()
     const prefill = productName ? `Hi, I need help with "${productName}".` : ''
@@ -192,10 +186,7 @@ export default function ProductPage() {
               Order via WhatsApp
             </Button>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" onClick={handleAskAI}>
-                Ask AI
-              </Button>
+            <div className="grid grid-cols-1 gap-3">
               <Button variant="outline" onClick={handleChatWithPerson}>
                 Chat with Person
               </Button>
@@ -207,4 +198,3 @@ export default function ProductPage() {
     </div>
   )
 }
-

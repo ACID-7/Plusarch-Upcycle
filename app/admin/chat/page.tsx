@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { Clock, MessageSquare, RefreshCw, Search, User } from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
+import { Clock, MessageSquare, RefreshCw, Search, Trash2, User } from 'lucide-react'
 
 type ConversationStatus = 'open' | 'pending' | 'closed'
 
@@ -23,6 +24,7 @@ interface Message {
   sender_type: 'user' | 'ai' | 'admin'
   body: string
   created_at: string
+  pending?: boolean
 }
 
 interface Profile {
@@ -52,6 +54,9 @@ export default function AdminChatPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const pendingMessageIdsRef = useRef<Set<string>>(new Set())
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.id === selectedId) || null,
@@ -135,21 +140,43 @@ export default function AdminChatPage() {
 
   const handleSendReply = async () => {
     if (!reply.trim() || !selectedId) return
+    const messageToSend = reply.trim()
     setSending(true)
+
+    const optimisticId = `pending-${Date.now()}`
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      sender_type: 'admin',
+      body: messageToSend,
+      created_at: new Date().toISOString(),
+      pending: true,
+    }
+
+    pendingMessageIdsRef.current.add(optimisticId)
+    setMessages((prev) => [...prev, optimisticMessage])
+    setReply('')
 
     const { data, error } = await supabase
       .from('messages')
       .insert({
         conversation_id: selectedId,
         sender_type: 'admin',
-        body: reply,
+        body: messageToSend,
       })
       .select()
       .single()
 
-    if (!error && data) {
-      setMessages((prev) => [...prev, data as Message])
-      setReply('')
+    if (error) {
+      pendingMessageIdsRef.current.delete(optimisticId)
+      setMessages((prev) => prev.filter((message) => message.id !== optimisticId))
+      setReply(messageToSend)
+    } else if (data) {
+      pendingMessageIdsRef.current.delete(optimisticId)
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === optimisticId ? { ...(data as Message), pending: false } : message
+        )
+      )
     }
 
     setSending(false)
@@ -163,6 +190,44 @@ export default function AdminChatPage() {
     setReply(suggestion)
   }
 
+  const handleDeleteConversation = async () => {
+    if (!selectedConversation || deleting) return
+
+    const confirmed = window.confirm(
+      `Delete the chat with ${selectedConversation.name || 'this customer'}? This will remove the entire conversation and its messages.`
+    )
+
+    if (!confirmed) return
+
+    setDeleting(true)
+
+    const deletedId = selectedConversation.id
+    const remainingConversations = conversations.filter((conversation) => conversation.id !== deletedId)
+
+    const { error } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', deletedId)
+
+    if (error) {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      })
+      setDeleting(false)
+      return
+    }
+
+    setConversations(remainingConversations)
+    setMessages([])
+    setReply('')
+    pendingMessageIdsRef.current.clear()
+    setSelectedId(remainingConversations[0]?.id || null)
+    toast({ title: 'Conversation deleted' })
+    setDeleting(false)
+  }
+
   useEffect(() => {
     fetchConversations()
   }, [])
@@ -170,6 +235,74 @@ export default function AdminChatPage() {
   useEffect(() => {
     if (!selectedId) return
     fetchMessages(selectedId)
+  }, [selectedId])
+
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+  }, [messages])
+
+  useEffect(() => {
+    const conversationsChannel = supabase
+      .channel('admin-conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations',
+        },
+        () => {
+          fetchConversations()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(conversationsChannel)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedId) return
+
+    const messagesChannel = supabase
+      .channel(`admin-messages-${selectedId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedId}`,
+        },
+        (payload) => {
+          const incoming = payload.new as Message
+          setMessages((prev) => {
+            if (prev.some((message) => message.id === incoming.id)) return prev
+
+            const optimisticId = Array.from(pendingMessageIdsRef.current).find((pendingId) => {
+              const optimisticMessage = prev.find((message) => message.id === pendingId)
+              return optimisticMessage?.sender_type === incoming.sender_type && optimisticMessage.body === incoming.body
+            })
+
+            if (optimisticId) {
+              pendingMessageIdsRef.current.delete(optimisticId)
+              return prev.map((message) =>
+                message.id === optimisticId ? { ...incoming, pending: false } : message
+              )
+            }
+
+            return [...prev, incoming]
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(messagesChannel)
+    }
   }, [selectedId])
 
   return (
@@ -278,12 +411,22 @@ export default function AdminChatPage() {
                   <Button size="sm" variant="outline" className="border-emerald-800/60 text-emerald-100" onClick={useSuggestedReply}>
                     Suggest reply
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDeleteConversation}
+                    disabled={deleting}
+                    className="border-red-400/60 text-red-300 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {deleting ? 'Deleting...' : 'Delete chat'}
+                  </Button>
                 </div>
               )}
             </div>
           </CardHeader>
           <CardContent className="flex flex-col h-[60vh] md:h-[560px]">
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2">
               {!selectedConversation && (
                 <div className="h-full flex flex-col items-center justify-center text-center text-emerald-100/70">
                   <User className="h-8 w-8 mb-3 text-emerald-200" />
@@ -314,7 +457,7 @@ export default function AdminChatPage() {
                   >
                     <p>{message.body}</p>
                     <p className="mt-1 text-[10px] opacity-70">
-                      {new Date(message.created_at).toLocaleTimeString()}
+                      {message.pending ? 'Sending...' : new Date(message.created_at).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>
@@ -327,7 +470,7 @@ export default function AdminChatPage() {
                   onChange={(event) => setReply(event.target.value)}
                   placeholder="Write a reply..."
                   disabled={!selectedConversation || sending}
-                  onKeyPress={(event) => event.key === 'Enter' && handleSendReply()}
+                  onKeyDown={(event) => event.key === 'Enter' && handleSendReply()}
                   className="bg-white/5 border-emerald-900/60 text-white placeholder:text-emerald-200/60"
                 />
                 <Button

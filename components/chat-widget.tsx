@@ -15,6 +15,7 @@ interface Message {
   sender_type: 'user' | 'ai' | 'admin'
   body: string
   created_at: string
+  pending?: boolean
 }
 
 interface Conversation {
@@ -54,6 +55,7 @@ export function ChatWidget() {
   const [aiLoading, setAiLoading] = useState(false)
   const [statusNote, setStatusNote] = useState('You are connected to a live specialist.')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const pendingMessageIdsRef = useRef<Set<string>>(new Set())
   const quickReplies = ['Order details', 'Product availability', 'Shipping info', 'Care instructions']
 
   const supabase = createClient()
@@ -107,6 +109,18 @@ export function ChatWidget() {
           const incoming = payload.new as Message
           setMessages((prev) => {
             if (prev.some((item) => item.id === incoming.id)) return prev
+            const optimisticId = Array.from(pendingMessageIdsRef.current).find((pendingId) => {
+              const optimisticMessage = prev.find((item) => item.id === pendingId)
+              return optimisticMessage?.sender_type === incoming.sender_type && optimisticMessage.body === incoming.body
+            })
+
+            if (optimisticId) {
+              pendingMessageIdsRef.current.delete(optimisticId)
+              return prev.map((item) =>
+                item.id === optimisticId ? { ...incoming, pending: false } : item
+              )
+            }
+
             return [...prev, incoming]
           })
         }
@@ -119,7 +133,7 @@ export function ChatWidget() {
   }, [conversation?.id])
 
   const initializeChat = async () => {
-    if (!user) return
+    if (!user) return null
 
     setStatusNote('Connecting you with a live specialist...')
     // Find or create live chat conversation
@@ -134,6 +148,7 @@ export function ChatWidget() {
       setConversation(existingConv)
       loadMessages(existingConv.id)
       setStatusNote('You are connected. Ask us anything.')
+      return existingConv as Conversation
     } else {
       const { data: newConv, error } = await supabase
         .from('conversations')
@@ -145,8 +160,11 @@ export function ChatWidget() {
         setConversation(newConv)
         setMessages([])
         setStatusNote('Say hello! A specialist will join shortly.')
+        return newConv as Conversation
       }
     }
+
+    return null
   }
 
   const loadMessages = async (conversationId: string) => {
@@ -172,19 +190,43 @@ export function ChatWidget() {
     if (!user || loading) return
     setLoading(true)
 
-    if (conversation) {
-      // Send live chat message
-      const { error } = await supabase
+    const activeConversation = conversation ?? (await initializeChat())
+
+    if (activeConversation) {
+      const optimisticId = `pending-${Date.now()}`
+      const optimisticMessage: Message = {
+        id: optimisticId,
+        sender_type: 'user',
+        body: messageToSend,
+        created_at: new Date().toISOString(),
+        pending: true,
+      }
+
+      pendingMessageIdsRef.current.add(optimisticId)
+      setMessages((prev) => [...prev, optimisticMessage])
+      setNewMessage('')
+      setStatusNote('Sending your message...')
+
+      const { data, error } = await supabase
         .from('messages')
         .insert({
-          conversation_id: conversation.id,
+          conversation_id: activeConversation.id,
           sender_type: 'user',
           body: messageToSend,
         })
+        .select()
+        .single()
 
-      if (!error) {
+      if (error) {
+        pendingMessageIdsRef.current.delete(optimisticId)
+        setMessages((prev) => prev.filter((item) => item.id !== optimisticId))
+        setStatusNote('Message failed to send. Please try again.')
+      } else if (data) {
+        pendingMessageIdsRef.current.delete(optimisticId)
+        setMessages((prev) =>
+          prev.map((item) => (item.id === optimisticId ? { ...(data as Message), pending: false } : item))
+        )
         setStatusNote('We will reply shortly. Keep this window open for updates.')
-        setNewMessage('')
       }
     }
 
@@ -417,6 +459,11 @@ export function ChatWidget() {
                                 }`}
                               >
                                 {message.body}
+                                {message.pending && (
+                                  <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-800/70">
+                                    Sending
+                                  </p>
+                                )}
                               </div>
                             </motion.div>
                           ))}
