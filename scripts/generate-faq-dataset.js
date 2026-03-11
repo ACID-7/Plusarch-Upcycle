@@ -90,52 +90,77 @@ const greetingAnswers = [
 
 // ---- Shipping: templates + cities ----
 const cities = [
+  // We only deliver within Sri Lanka – focus on local cities and districts
   'Colombo', 'Kandy', 'Galle', 'Jaffna', 'Negombo', 'Anuradhapura', 'Trincomalee', 'Batticaloa', 'Matara', 'Ratnapura',
   'Kurunegala', 'Badulla', 'Gampaha', 'Kalutara', 'Hambantota', 'Vavuniya', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Ampara',
-  'Polonnaruwa', 'Monaragala', 'Kegalle', 'Puttalam', 'Sri Lanka', 'the UK', 'the USA', 'USA', 'UK', 'Australia',
-  'Canada', 'India', 'UAE', 'Dubai', 'Singapore', 'Malaysia', 'Germany', 'France', 'Japan', 'New Zealand',
-  'Middle East', 'Europe', 'Asia', 'North America', 'my country', 'overseas', 'abroad', 'internationally',
+  'Polonnaruwa', 'Monaragala', 'Kegalle', 'Puttalam', 'Sri Lanka',
 ];
 
 const shippingPairs = [
-  { q: 'How long does shipping take?', a: 'Shipping typically takes 3–7 business days within Sri Lanka. International shipping may take 2–4 weeks depending on the destination. We use eco-friendly packaging and carbon-neutral shipping options where possible.' },
-  { q: 'Do you ship internationally?', a: 'Yes, we ship internationally. Delivery usually takes 2–4 weeks depending on your country. Customs and duties are the responsibility of the recipient.' },
-  { q: 'How much is delivery?', a: 'Delivery costs depend on your location and order size. Shipping within Sri Lanka is calculated at checkout. For international orders, we\'ll provide a quote. We use sustainable packaging.' },
-  { q: 'Can I track my order?', a: 'Yes. Once your order is dispatched, we\'ll send you tracking details by email so you can follow your package.' },
-  { q: 'When will my order be dispatched?', a: 'Orders are usually dispatched within 1–2 business days. You\'ll receive an email with tracking once it\'s shipped.' },
-  { q: 'Do you offer free shipping?', a: 'Shipping terms depend on your order and location. Check the cart or checkout page for current shipping options and any free-shipping thresholds.' },
-  { q: 'What courier do you use?', a: 'We use reliable courier partners for local and international delivery. You\'ll get tracking details once your order is dispatched.' },
-  { q: 'How is my order packaged?', a: 'We use eco-friendly packaging. Jewelry is packed securely to avoid damage during transit.' },
-  { q: 'How fast can I get my order?', a: 'Within Sri Lanka expect 3–7 business days. International orders typically 2–4 weeks. Dispatch is usually within 1–2 business days.' },
-  { q: 'Is shipping carbon neutral?', a: 'We use carbon-neutral or eco-friendly shipping options where available. Our packaging is also chosen with sustainability in mind.' },
-  { q: 'Can I get express delivery?', a: 'Delivery speed depends on your location. Contact us via WhatsApp or at checkout to ask about faster options for your area.' },
-  { q: 'Where do you ship from?', a: 'We ship from Sri Lanka. Local orders take 3–7 business days; international orders 2–4 weeks depending on destination.' },
-  { q: 'My package hasn\'t arrived', a: 'Check your email for tracking info. If it\'s past the expected window, contact us with your order number and we\'ll look into it.' },
-  { q: 'Delivery time?', a: '3–7 business days within Sri Lanka; 2–4 weeks internationally. You\'ll get tracking once dispatched.' },
-  { q: 'Shipping time?', a: 'Local: 3–7 business days. International: 2–4 weeks. Dispatch usually within 1–2 business days.' },
-  { q: 'How long for delivery?', a: 'Sri Lanka: 3–7 business days. International: 2–4 weeks depending on destination.' },
-  { q: 'When do you ship?', a: 'We dispatch within 1–2 business days. You\'ll receive tracking by email.' },
-  { q: 'Do you deliver to my address?', a: 'We deliver across Sri Lanka and internationally. Enter your address at checkout to see options and cost.' },
-  { q: 'Shipping cost to my city?', a: 'Shipping is calculated at checkout based on your location. Add items to cart and proceed to checkout to see the cost.' },
-  { q: 'Eco packaging?', a: 'Yes. We use eco-friendly packaging and sustainable options where possible.' },
-  { q: 'Can I get my order tomorrow?', a: 'Delivery times are 3–7 days locally and 2–4 weeks internationally. Contact us to ask about express options.' },
-  { q: 'How many days for shipping?', a: 'Within Sri Lanka: 3–7 business days. International: 2–4 weeks.' },
-  { q: 'Tracking number?', a: 'We send tracking details by email once your order is dispatched. Check your inbox and spam folder.' },
-  { q: 'Where is my package?', a: 'Use the tracking link we sent by email. If you didn\'t get it, contact us with your order number.' },
-  { q: 'Dispatch time?', a: 'Orders are typically dispatched within 1–2 business days.' },
-  { q: 'International delivery?', a: 'Yes. We ship internationally. Delivery usually takes 2–4 weeks. Customs and duties may apply.' },
-  { q: 'Local delivery?', a: 'Yes. We deliver across Sri Lanka in 3–7 business days.' },
-  { q: 'Shipping options?', a: 'Options and costs are shown at checkout based on your location. We use eco-friendly packaging.' },
-  { q: 'Free delivery?', a: 'Check the cart or checkout for current shipping offers and any free-shipping threshold.' },
-  { q: 'Delivery charge?', a: 'Delivery cost depends on location and order. It\'s shown at checkout.' },
-  { q: 'How much is shipping?', a: 'Shipping is calculated at checkout. It depends on your location and order size.' },
-  { q: 'Do you ship worldwide?', a: 'Yes. We ship internationally. Delivery typically takes 2–4 weeks depending on destination.' },
-  { q: 'Shipping to Sri Lanka?', a: 'Yes. We ship across Sri Lanka. Delivery usually takes 3–7 business days.' },
-  { q: 'Can you ship today?', a: 'We dispatch within 1–2 business days. Contact us for urgent orders.' },
-  { q: 'When will it arrive?', a: 'Local: 3–7 business days after dispatch. International: 2–4 weeks. Check your tracking email.' },
-  { q: 'How do I get tracking?', a: 'We email tracking details once your order is shipped. Check your inbox and spam.' },
-  { q: 'Package lost?', a: 'Contact us with your order number and we\'ll check with the courier and help resolve it.' },
-  { q: 'Delayed delivery?', a: 'Check your tracking email for updates. If it\'s significantly late, contact us with your order number.' },
+  {
+    q: 'How long does shipping take?',
+    a: 'Delivery within Sri Lanka typically takes around 3–7 business days from the time we confirm your order on WhatsApp. Exact timing can vary a little by area and courier.',
+  },
+  {
+    q: 'Do you ship internationally?',
+    a: 'We currently only deliver within Sri Lanka. If you are outside Sri Lanka, you can still browse our designs, but we cannot ship internationally right now.',
+  },
+  {
+    q: 'How much is delivery?',
+    a: 'Delivery fees depend on your area within Sri Lanka and the order size. When you place an order via WhatsApp, we\'ll confirm the delivery fee with you before you pay.',
+  },
+  {
+    q: 'Can I track my order?',
+    a: 'We don\'t have an online tracking page. To check the status of your delivery, please contact us via WhatsApp or live chat with your name and order details.',
+  },
+  {
+    q: 'When will my order be dispatched?',
+    a: 'Orders are usually sent out within 1–2 business days after we confirm your order and payment via WhatsApp. Delivery across Sri Lanka is then around 3–7 business days.',
+  },
+  {
+    q: 'Do you offer free shipping?',
+    a: 'Free or discounted delivery depends on current offers and your order size. When you message us on WhatsApp to place an order, we\'ll let you know the delivery fee.',
+  },
+  {
+    q: 'What courier do you use?',
+    a: 'We use reliable local courier partners within Sri Lanka. If you need more details for your area, contact us on WhatsApp when placing your order.',
+  },
+  {
+    q: 'How is my order packaged?',
+    a: 'We use eco-friendly packaging and pack each piece securely so it arrives safely.',
+  },
+  {
+    q: 'How fast can I get my order?',
+    a: 'Most deliveries within Sri Lanka arrive in about 3–7 business days after we confirm your order and payment on WhatsApp.',
+  },
+  {
+    q: 'Eco packaging?',
+    a: 'Yes. We use eco-friendly, minimal packaging while still keeping your jewelry safe during delivery.',
+  },
+  {
+    q: 'Can I get my order tomorrow?',
+    a: 'Standard delivery within Sri Lanka is around 3–7 business days. If you need something urgently, message us on WhatsApp and we\'ll tell you what is possible for your area.',
+  },
+  {
+    q: 'How many days for shipping?',
+    a: 'Across Sri Lanka, most orders take around 3–7 business days to arrive once we confirm payment on WhatsApp.',
+  },
+  {
+    q: 'Do you deliver to my address?',
+    a: 'We deliver across Sri Lanka. When you message us on WhatsApp, share your address and we will confirm if delivery is available and the fee.',
+  },
+  {
+    q: 'Shipping cost to my city?',
+    a: 'Delivery fees depend on your city in Sri Lanka. Send us a WhatsApp message with your city and items you want, and we\'ll confirm the delivery cost before you pay.',
+  },
+  {
+    q: 'Package lost?',
+    a: 'If your order seems late, contact us via WhatsApp or live chat with your name and order details. We\'ll check with the courier and update you.',
+  },
+  {
+    q: 'Delayed delivery?',
+    a: 'If it has been more than about a week since we confirmed your order, please reach out on WhatsApp or live chat with your details so we can check the status for you.',
+  },
 ];
 
 // ---- Returns ----
@@ -331,50 +356,90 @@ const contactPairs = [
 
 // ---- Payment ----
 const paymentPairs = [
-  { q: 'What payment methods do you accept?', a: 'We accept common payment methods at checkout, including cards and local options. Exact methods are shown when you place an order. All transactions are secure.' },
-  { q: 'Can I pay on delivery?', a: 'Payment options depend on your region. Check the checkout page for available methods. For Sri Lanka, we may offer cash on delivery where applicable.' },
-  { q: 'Do you accept card payments?', a: 'Yes. Card and other payment options are available at checkout. The exact methods are shown when you place your order.' },
-  { q: 'Is checkout secure?', a: 'Yes. We use secure payment processing. Your card details are handled by our payment provider, not stored on our site.' },
-  { q: 'Can I pay in instalments?', a: 'Instalment options depend on the payment methods we offer at checkout. Check the checkout page or contact us to see what\'s available for your order.' },
-  { q: 'Do you accept PayPal?', a: 'Payment methods are listed at checkout. If PayPal isn\'t shown, contact us—we may be able to accommodate alternative arrangements for your region.' },
-  { q: 'Payment in LKR?', a: 'Yes. Prices are in LKR for Sri Lanka. Checkout will show the total and accepted payment methods in local currency.' },
-  { q: 'Cash on delivery?', a: 'For Sri Lanka, we may offer cash on delivery where applicable. Check checkout for available options.' },
-  { q: 'Credit card?', a: 'Yes. Credit and debit cards are typically accepted at checkout. See the checkout page for the full list.' },
-  { q: 'Debit card?', a: 'Yes. Debit cards are typically accepted. Check the checkout page for your region.' },
-  { q: 'Bank transfer?', a: 'Payment methods are shown at checkout. If bank transfer is available, it will be listed there.' },
-  { q: 'Secure payment?', a: 'Yes. We use secure payment processing. Your card or payment details are not stored on our servers.' },
-  { q: 'Payment options?', a: 'Options are displayed at checkout and may include cards, COD (where available), and other local methods.' },
-  { q: 'Pay in USD?', a: 'Our prices are in LKR. If you\'re overseas, your card or payment provider may convert. Check checkout for your currency.' },
-  { q: 'Payment when?', a: 'Payment is taken at checkout when you place your order. For COD, you pay on delivery.' },
-  { q: 'Visa Mastercard?', a: 'We typically accept major cards including Visa and Mastercard. Check the checkout page for your order.' },
-  { q: 'Payment failed?', a: 'Check your card details and try again. If it keeps failing, try another method or contact us with your order details.' },
-  { q: 'Invoice?', a: 'Order confirmation and details are sent by email. For a formal invoice, contact us after ordering.' },
-  { q: 'Receipt?', a: 'Order confirmation is sent by email and serves as your receipt. For a formal receipt or invoice, contact us.' },
-  { q: 'Refund to card?', a: 'Refunds are processed to the original payment method. Card refunds may take a few business days to appear.' },
+  {
+    q: 'What payment methods do you accept?',
+    a: 'Orders are placed via WhatsApp from our website. We currently accept payment mainly by bank transfer within Sri Lanka. When you message us to order, we\'ll share our bank details and the total amount.',
+  },
+  {
+    q: 'Can I pay on delivery?',
+    a: 'We do not use an online checkout or card gateway. Payment is usually done in advance by bank transfer after we confirm your order on WhatsApp.',
+  },
+  {
+    q: 'Do you accept card payments?',
+    a: 'Right now we don\'t process online card payments. After you click “Buy” on the website and open WhatsApp, we\'ll confirm your order and share bank transfer details in LKR.',
+  },
+  {
+    q: 'Is payment secure?',
+    a: 'We confirm your order and total directly with you on WhatsApp, then share our official bank account details. Always use the bank details we send from our official number.',
+  },
+  {
+    q: 'Payment in LKR?',
+    a: 'Yes. All payments are done in LKR by bank transfer within Sri Lanka. We\'ll confirm the final total and bank details on WhatsApp before you pay.',
+  },
+  {
+    q: 'Bank transfer?',
+    a: 'Yes. Bank transfer is our main payment method. Once you confirm your order on WhatsApp, we\'ll send you our bank details and the amount to transfer.',
+  },
+  {
+    q: 'Payment options?',
+    a: 'We currently accept orders via WhatsApp and take payment mainly through bank transfer within Sri Lanka. We\'ll guide you step by step in chat.',
+  },
+  {
+    q: 'Payment when?',
+    a: 'After you click buy and open WhatsApp, we confirm your items, delivery fee, and then ask you to pay by bank transfer before we send the order.',
+  },
+  {
+    q: 'Invoice?',
+    a: 'If you need an invoice or payment proof, let us know on WhatsApp after you complete the bank transfer and we\'ll share the details.',
+  },
+  {
+    q: 'Receipt?',
+    a: 'We can share a simple receipt or confirmation via WhatsApp once your bank transfer is received. Just ask us in chat.',
+  },
 ];
 
 // ---- Order status ----
 const orderStatusPairs = [
-  { q: 'Where is my order?', a: 'Once your order is shipped, we send tracking details by email. If you haven\'t received them or have concerns, contact us via WhatsApp or email with your order number.' },
-  { q: 'How do I check my order status?', a: 'We\'ll email you when your order is confirmed and when it\'s dispatched. For more details, contact us with your order number and we\'ll look it up.' },
-  { q: 'Has my order shipped?', a: 'You\'ll receive an email with tracking when it ships. If you haven\'t had an update, contact us with your order number and we\'ll check.' },
-  { q: 'When will I get my order?', a: 'Local orders usually arrive in 3–7 business days after dispatch; international 2–4 weeks. Check your email for tracking once it\'s shipped.' },
-  { q: 'I didn\'t get tracking', a: 'Check spam and promotions folders. If you still don\'t see it, contact us with your order number and we\'ll resend or look up the status.' },
-  { q: 'Order not received', a: 'First check your tracking email. If the delivery window has passed, contact us with your order number and we\'ll investigate with the courier.' },
-  { q: 'Can you resend my order confirmation?', a: 'Contact us with the email you used to order and we\'ll resend the confirmation and any tracking we have.' },
-  { q: 'Order status?', a: 'We email you when the order is confirmed and when it\'s dispatched. For details, contact us with your order number.' },
-  { q: 'Tracking info?', a: 'Tracking is sent by email when your order ships. Check spam. If missing, contact us with your order number.' },
-  { q: 'When was my order shipped?', a: 'You\'ll have received an email when it shipped. For the exact date, contact us with your order number.' },
-  { q: 'Order delayed?', a: 'Check your tracking for updates. If it\'s significantly late, contact us with your order number and we\'ll follow up with the courier.' },
-  { q: 'Change delivery address?', a: 'Contact us immediately with your order number and new address. We can only change it if the order hasn\'t shipped yet.' },
-  { q: 'Reschedule delivery?', a: 'Contact us or the courier (using the tracking link) to see if rescheduling is possible.' },
-  { q: 'Order confirmation?', a: 'You should receive an email confirmation after placing your order. If not, check spam or contact us with your email and order details.' },
-  { q: 'Lost order?', a: 'Contact us with your order number. We\'ll check tracking and work with the courier to resolve it.' },
-  { q: 'Wrong address on order?', a: 'Contact us right away with your order number. If it hasn\'t shipped we may be able to correct it.' },
-  { q: 'Order number?', a: 'Your order number is in the confirmation email we sent when you placed the order. Check your inbox and spam.' },
-  { q: 'How to track?', a: 'Use the tracking link in the dispatch email we sent you. If you don\'t have it, contact us with your order number.' },
-  { q: 'Delivery status?', a: 'Check the tracking link in your shipping email. For help, contact us with your order number.' },
-  { q: 'Update on my order?', a: 'We\'ll email you when the order is confirmed and when it\'s shipped. For a specific update, contact us with your order number.' },
+  {
+    q: 'Where is my order?',
+    a: 'To check your order, please contact us via WhatsApp or live chat with your name and what you ordered. We don\'t have an online tracking page, so we check the courier and update you manually.',
+  },
+  {
+    q: 'How do I check my order status?',
+    a: 'Send us a message on WhatsApp or use live chat with your name, mobile number, and order details. We\'ll check with the courier and let you know the latest status.',
+  },
+  {
+    q: 'Has my order shipped?',
+    a: 'Most orders are sent within 1–2 business days after we confirm your bank transfer. If you are unsure, contact us on WhatsApp or live chat and we\'ll confirm whether it has been sent.',
+  },
+  {
+    q: 'When will I get my order?',
+    a: 'Within Sri Lanka, delivery is usually around 3–7 business days from the time we send your parcel. If it feels late, just contact us on WhatsApp and we\'ll check the status for you.',
+  },
+  {
+    q: 'Order not received',
+    a: 'If it has been more than about a week since we confirmed your order, please message us via WhatsApp or live chat with your details. We\'ll follow up with the courier and update you.',
+  },
+  {
+    q: 'Order delayed?',
+    a: 'Delays can happen with couriers. Share your name and order details on WhatsApp or live chat and we\'ll manually check the status and next steps.',
+  },
+  {
+    q: 'Change delivery address?',
+    a: 'If we haven\'t sent your parcel yet, we may be able to change the address. Contact us as soon as possible on WhatsApp with your current and new address.',
+  },
+  {
+    q: 'Order confirmation?',
+    a: 'We confirm your order directly in WhatsApp after you click “Buy” on the website. If you are unsure whether your order is confirmed, send us a message and we\'ll check.',
+  },
+  {
+    q: 'Lost order?',
+    a: 'If you think your parcel is lost, contact us via WhatsApp or live chat with your name and order details. We\'ll check with the courier and help resolve it.',
+  },
+  {
+    q: 'How to track?',
+    a: 'We don\'t provide an online tracking code. To track your order, please message us on WhatsApp or live chat and we\'ll check the courier and let you know the latest update.',
+  },
 ];
 
 // ---- Build dataset ----
@@ -398,10 +463,22 @@ function generate() {
   // Shipping: base pairs + "Do you ship to {city}?" and "How long to {city}?"
   shippingPairs.forEach(({ q, a }) => addPair(pairs, seen, 'shipping', q, a));
   const shippingCityAnswers = [
-    (c) => 'Yes, we ship to ' + c + '. Within Sri Lanka delivery is typically 3–7 business days; internationally 2–4 weeks depending on destination. Cost is shown at checkout.',
-    (c) => 'Yes. We ship to ' + c + '. Local Sri Lanka orders: 3–7 business days. International: 2–4 weeks. See checkout for shipping cost.',
-    (c) => 'Delivery to ' + c + ' is typically 3–7 business days within Sri Lanka, or 2–4 weeks if international. You\'ll get tracking once shipped.',
-    (c) => 'Yes. We deliver to ' + c + '. Times and cost are shown at checkout.',
+    (c) =>
+      'Yes, we deliver to ' +
+      c +
+      ' within Sri Lanka. Delivery is usually around 3–7 business days after we confirm your order and payment via WhatsApp. We\'ll tell you the exact delivery fee when you place your order.',
+    (c) =>
+      'We can send orders to ' +
+      c +
+      ' in Sri Lanka. Most parcels arrive in about a week. When you message us on WhatsApp to order, we\'ll confirm delivery time and fee for your area.',
+    (c) =>
+      'Delivery to ' +
+      c +
+      ' is available within Sri Lanka and normally takes around 3–7 business days. Please contact us on WhatsApp with your items so we can confirm the delivery charge.',
+    (c) =>
+      'Yes, we deliver to ' +
+      c +
+      ' in Sri Lanka. Delivery timing and fee are confirmed directly with you on WhatsApp when you place the order.',
   ];
   const shippingCityQuestions = [
     (c) => `Do you ship to ${c}?`, (c) => `Shipping to ${c}?`, (c) => `How long to ${c}?`, (c) => `Do you deliver to ${c}?`,
@@ -497,17 +574,17 @@ function generate() {
   // Payment
   paymentPairs.forEach(({ q, a }) => addPair(pairs, seen, 'payment', q, a));
   const paymentPhrasings = [
-    'Payment?', 'Pay?', 'How to pay?', 'Payment method?', 'Payment methods?', 'Pay by card?', 'Card?', 'Cash?', 'COD?',
-    'Secure?', 'Safe to pay?', 'Checkout?', 'Price?', 'Total?', 'LKR?', 'Currency?',
-    'Accepted payments?', 'Ways to pay?', 'Payment options?', 'Credit card?', 'Debit card?', 'Cash on delivery?',
-    'Pay later?', 'Installments?', 'Payment security?', 'Secure checkout?', 'Pay in LKR?', 'USD?', 'PayPal?',
-    'Bank transfer?', 'Online payment?', 'Payment when?', 'When to pay?', 'Payment at checkout?', 'Invoice?',
-    'Receipt?', 'Payment proof?', 'Refund method?', 'How refund?',
+    'Payment?', 'Pay?', 'How to pay?', 'Payment method?', 'Payment methods?', 'Pay by bank transfer?', 'Bank transfer?',
+    'Secure?', 'Safe to pay?', 'Price?', 'Total?', 'LKR?', 'Currency?',
+    'Accepted payments?', 'Ways to pay?', 'Payment options?', 'Do you accept card?', 'Card payments?',
+    'Pay later?', 'Installments?', 'Payment security?', 'Pay in LKR?',
+    'Online payment?', 'Payment when?', 'When to pay?', 'Invoice?',
+    'Receipt?', 'Payment proof?', 'How to send payment?',
   ];
   const paymentAnswers = [
-    'We accept cards and other methods shown at checkout. All payments are secure. For Sri Lanka, prices are in LKR; COD may be available.',
-    'Payment options are displayed at checkout and may include cards, COD where available, and other local methods. All transactions are secure.',
-    'Yes. We use secure payment processing. Prices are in LKR for Sri Lanka. Exact payment methods appear when you place an order.',
+    'Orders are confirmed in WhatsApp after you click “Buy” on the website. We\'ll share our bank account details and final total in LKR so you can pay by bank transfer.',
+    'We mainly accept bank transfer within Sri Lanka. Once you confirm your items and delivery fee on WhatsApp, we\'ll send bank details and instructions for payment.',
+    'We don\'t have an online card checkout. All payment details are shared safely in WhatsApp from our official number, and you pay by bank transfer in LKR.',
   ];
   paymentPhrasings.forEach((q, i) => addPair(pairs, seen, 'payment', q, paymentAnswers[i % paymentAnswers.length]));
 
@@ -515,18 +592,37 @@ function generate() {
   orderStatusPairs.forEach(({ q, a }) => addPair(pairs, seen, 'order_status', q, a));
   const orderPhrasings = [
     'Order?', 'My order?', 'Order status?', 'Status?', 'Tracking?', 'Shipped?', 'Dispatch?', 'When shipped?',
-    'Where is it?', 'Delivery?', 'Arrival?', 'Confirmation?', 'Order number?', 'Order update?', 'Order details?',
+    'Where is it?', 'Delivery?', 'Arrival?', 'Confirmation?', 'Order update?', 'Order details?',
     'Track order?', 'Track package?', 'Where is my package?', 'When will it arrive?', 'Delivery status?',
     'Has it shipped?', 'Is it dispatched?', 'Order confirmation?', 'Did you get my order?', 'Order received?',
     'Update on order?', 'Order progress?', 'Delivery update?', 'Shipping update?', 'Lost order?', 'Missing order?',
     'Order delayed?', 'Late delivery?', 'Change address?', 'Update address?', 'Cancel order?', 'Modify order?',
   ];
   const orderAnswers = [
-    'We email you when your order is confirmed and when it\'s shipped (with tracking). For the latest status, contact us with your order number.',
-    'Check your email for the tracking link once your order has shipped. If you need help, contact us with your order number.',
-    'Order confirmations and shipping updates are sent by email. For a status check, contact us with your order number and we\'ll look it up.',
+    'We confirm and update orders directly via WhatsApp or live chat. To check your status, just message us with your name and what you ordered and we\'ll look it up.',
+    'There is no online tracking page. For any delivery questions, contact us on WhatsApp or live chat and we\'ll manually check your order with the courier.',
+    'If your order feels late, send us your name and order details on WhatsApp or live chat. We\'ll contact the courier if needed and let you know the latest.',
   ];
   orderPhrasings.forEach((q, i) => addPair(pairs, seen, 'order_status', q, orderAnswers[i % orderAnswers.length]));
+
+  // Lightweight paraphrased variants to expand the dataset by ~1000+ Q&A
+  // This helps the AI see more natural phrasings without changing the core answers.
+  const baseSnapshot = [...pairs];
+  const variantSuffixes = [
+    ' please',
+    ' please?',
+    ' for Plus Arch?',
+    ' about Plus Arch?',
+  ];
+
+  baseSnapshot.forEach((pair, index) => {
+    // Only expand roughly one third of the base pairs to avoid exploding the file too much
+    if (!pair?.question || !pair?.answer) return;
+    if (index % 3 !== 0) return;
+    const suffix = variantSuffixes[index % variantSuffixes.length];
+    const qVariant = `${pair.question.trim()}${suffix}`;
+    addPair(pairs, seen, pair.intent || 'greeting', qVariant, pair.answer);
+  });
 
   return pairs;
 }
