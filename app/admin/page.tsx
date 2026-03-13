@@ -10,9 +10,7 @@ import {
   ArrowRight,
   FileText,
   MessageSquare,
-  ShoppingCart,
   UserRound,
-  Wallet,
 } from 'lucide-react'
 
 type ConversationStatus = 'open' | 'pending' | 'closed'
@@ -25,11 +23,7 @@ interface DashboardStats {
   totalChats: number
   activeProducts: number
   hiddenProducts: number
-  totalOrders: number
-  pendingOrders: number
-  paidOrders: number
   totalUsers: number
-  monthlyRevenue: number
 }
 
 interface RecentConversation {
@@ -63,11 +57,7 @@ export default function AdminDashboard() {
     totalChats: 0,
     activeProducts: 0,
     hiddenProducts: 0,
-    totalOrders: 0,
-    pendingOrders: 0,
-    paidOrders: 0,
     totalUsers: 0,
-    monthlyRevenue: 0,
   })
   const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([])
   const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([])
@@ -76,17 +66,11 @@ export default function AdminDashboard() {
   const loadDashboard = async () => {
     setLoading(true)
 
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
-
     const [
       inquiriesRes,
       conversationsRes,
       recentChatsRes,
       productsRes,
-      ordersRes,
-      monthOrdersRes,
       recentInquiriesRes,
       usersRes,
     ] = await Promise.all([
@@ -98,11 +82,6 @@ export default function AdminDashboard() {
         .order('last_message_at', { ascending: false })
         .limit(5),
       supabase.from('products').select('status'),
-      supabase.from('orders').select('status, payment_status'),
-      supabase
-        .from('orders')
-        .select('total_amount_lkr, payment_status, created_at')
-        .gte('created_at', monthStart.toISOString()),
       supabase
         .from('inquiries')
         .select('id, user_id, subject, status, created_at')
@@ -115,8 +94,6 @@ export default function AdminDashboard() {
     const inquiryRows = recentInquiriesRes.data || []
     const allConversationStatuses = conversationsRes.data || []
     const allProductStatuses = productsRes.data || []
-    const allOrders = ordersRes.data || []
-    const monthOrders = monthOrdersRes.data || []
 
     const allUserIds = Array.from(
       new Set(
@@ -142,13 +119,6 @@ export default function AdminDashboard() {
     const pendingChats = allConversationStatuses.filter((item) => item.status === 'pending').length
     const activeProducts = allProductStatuses.filter((item) => item.status === 'active').length
     const hiddenProducts = allProductStatuses.filter((item) => item.status === 'hidden').length
-    const pendingOrders = allOrders.filter((item) =>
-      ['pending', 'confirmed', 'processing'].includes(item.status)
-    ).length
-    const paidOrders = allOrders.filter((item) => item.payment_status === 'paid').length
-    const monthlyRevenue = monthOrders
-      .filter((item) => item.payment_status === 'paid')
-      .reduce((total, item) => total + Number(item.total_amount_lkr || 0), 0)
 
     setStats({
       newInquiries: inquiriesRes.count || 0,
@@ -157,11 +127,7 @@ export default function AdminDashboard() {
       totalChats: allConversationStatuses.length,
       activeProducts,
       hiddenProducts,
-      totalOrders: allOrders.length,
-      pendingOrders,
-      paidOrders,
       totalUsers: usersRes.count || 0,
-      monthlyRevenue,
     })
     setRecentConversations(conversationRows as RecentConversation[])
     setRecentInquiries(inquiryRows as RecentInquiry[])
@@ -179,7 +145,6 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, loadDashboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadDashboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, loadDashboard)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadDashboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadDashboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadDashboard)
       .subscribe()
@@ -190,7 +155,7 @@ export default function AdminDashboard() {
   }, [])
 
   const backlogLabel = useMemo(() => {
-    const backlog = stats.newInquiries + stats.openChats + stats.pendingChats + stats.pendingOrders
+    const backlog = stats.newInquiries + stats.openChats + stats.pendingChats
     if (backlog === 0) return 'No active backlog'
     if (backlog <= 5) return 'Light backlog'
     if (backlog <= 12) return 'Manageable backlog'
@@ -207,7 +172,7 @@ export default function AdminDashboard() {
             <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Operations Pulse</p>
             <h1 className="text-3xl font-bold text-white">Dashboard</h1>
             <p className="mt-1 text-sm text-emerald-100/80">
-              Monitor support load, catalog visibility, order flow, and recent customer activity.
+              Monitor support load, catalog visibility, and recent customer activity.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -229,8 +194,8 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="New inquiries" value={stats.newInquiries} detail="Need first response" icon={FileText} />
         <MetricCard title="Live chat queue" value={stats.openChats + stats.pendingChats} detail={`${stats.openChats} open, ${stats.pendingChats} pending`} icon={MessageSquare} />
-        <MetricCard title="Orders in progress" value={stats.pendingOrders} detail={`${stats.totalOrders} total orders`} icon={ShoppingCart} />
-        <MetricCard title="Paid this month" value={`LKR ${stats.monthlyRevenue.toLocaleString()}`} detail={`${stats.paidOrders} paid orders`} icon={Wallet} />
+        <MetricCard title="Products live" value={stats.activeProducts} detail={`${stats.hiddenProducts} hidden`} icon={UserRound} />
+        <MetricCard title="Customers" value={stats.totalUsers} detail="Profiles registered" icon={UserRound} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.9fr]">
@@ -242,7 +207,7 @@ export default function AdminDashboard() {
             <HealthTile label="Customers" value={stats.totalUsers} note="Profiles registered" />
             <HealthTile label="Products live" value={stats.activeProducts} note={`${stats.hiddenProducts} hidden`} />
             <HealthTile label="Total chats" value={stats.totalChats} note="Conversation records" />
-            <HealthTile label="Order completion" value={stats.totalOrders === 0 ? '0%' : `${Math.round(((stats.totalOrders - stats.pendingOrders) / stats.totalOrders) * 100)}%`} note="Completed or resolved orders" />
+            <HealthTile label="New inquiries" value={stats.newInquiries} note="Waiting for response" />
           </CardContent>
         </Card>
 

@@ -229,6 +229,14 @@ function extractKeywords(message: string): string[] {
     'can',
     'you',
     'our',
+    'show',
+    'need',
+    'looking',
+    'find',
+    'tell',
+    'give',
+    'about',
+    'please',
   ])
 
   const unique = new Set(
@@ -236,10 +244,49 @@ function extractKeywords(message: string): string[] {
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
       .map((part) => part.trim())
+      .flatMap((part) => expandKeywordVariants(part))
       .filter((part) => part.length >= 3 && !stopWords.has(part))
   )
 
   return Array.from(unique).slice(0, 8)
+}
+
+function expandKeywordVariants(rawKeyword: string): string[] {
+  const keyword = rawKeyword.trim().toLowerCase()
+  if (!keyword) return []
+
+  const variants = new Set<string>([keyword])
+
+  if (keyword.endsWith('ies') && keyword.length > 4) {
+    variants.add(`${keyword.slice(0, -3)}y`)
+  }
+
+  if (keyword.endsWith('es') && keyword.length > 4) {
+    variants.add(keyword.slice(0, -2))
+  }
+
+  if (keyword.endsWith('s') && keyword.length > 3) {
+    variants.add(keyword.slice(0, -1))
+  }
+
+  const aliasMap: Record<string, string[]> = {
+    earring: ['earrings'],
+    earrings: ['earring'],
+    ring: ['rings'],
+    rings: ['ring'],
+    necklace: ['necklaces'],
+    necklaces: ['necklace'],
+    bracelet: ['bracelets'],
+    bracelets: ['bracelet'],
+    jewelry: ['jewellery'],
+    jewellery: ['jewelry'],
+  }
+
+  for (const alias of aliasMap[keyword] || []) {
+    variants.add(alias)
+  }
+
+  return Array.from(variants)
 }
 
 function rankSnippets(snippets: string[], keywords: string[], messageLower: string): string[] {
@@ -250,7 +297,7 @@ function rankSnippets(snippets: string[], keywords: string[], messageLower: stri
     .map((snippet) => {
       const lower = snippet.toLowerCase()
       const score = safeKeywords.reduce((total, keyword) => {
-        return total + (lower.includes(keyword) ? 1 : 0)
+        return total + (containsKeyword(lower, keyword) ? 1 : 0)
       }, 0)
       return { snippet, score }
     })
@@ -282,7 +329,7 @@ function getDatasetSnippets(messageLower: string, keywords: string[], limit: num
   const safeKeywords = keywords.length > 0 ? keywords : extractKeywords(messageLower)
   const scored = pairs.map((p) => {
     const text = `${p.question ?? ''} ${p.answer ?? ''}`.toLowerCase()
-    const score = safeKeywords.reduce((total, k) => total + (text.includes(k) ? 1 : 0), 0)
+    const score = safeKeywords.reduce((total, k) => total + (containsKeyword(text, k) ? 1 : 0), 0)
     return { pair: p, score }
   })
   const withScore = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score)
@@ -301,7 +348,7 @@ function getDatasetAnswerForIntent(intent: Intent, messageLower: string): string
     const keywords = extractKeywords(messageLower)
     const scored = forIntent.map((p) => {
       const text = `${p.question ?? ''} ${p.answer ?? ''}`.toLowerCase()
-      const score = keywords.reduce((total, k) => total + (text.includes(k) ? 1 : 0), 0)
+      const score = keywords.reduce((total, k) => total + (containsKeyword(text, k) ? 1 : 0), 0)
       return { pair: p, score }
     })
     const best = scored.sort((a, b) => b.score - a.score)[0] ?? scored[0]
@@ -312,7 +359,7 @@ function getDatasetAnswerForIntent(intent: Intent, messageLower: string): string
     .filter((p) => p.answer?.trim())
     .map((p) => {
       const text = `${p.question ?? ''} ${p.answer ?? ''}`.toLowerCase()
-      const score = keywords.reduce((total, k) => total + (text.includes(k) ? 1 : 0), 0)
+      const score = keywords.reduce((total, k) => total + (containsKeyword(text, k) ? 1 : 0), 0)
       return { pair: p, score }
     })
     .filter((x) => x.score > 0)
@@ -324,25 +371,62 @@ function findCatalogMatches(products: ProductRow[], messageLower: string): Produ
   const keywords = extractKeywords(messageLower)
   if (keywords.length === 0) return []
 
+  const requestedCategory = detectRequestedCategory(messageLower)
+
   return [...products]
     .map((product) => {
-      const haystack = [
+      const categoryNames = (product.categories || []).map((category) => category?.name || '')
+      const haystackParts = [
         product.name || '',
         product.description || '',
         product.materials || '',
         product.care || '',
-        ...((product.categories || []).map((category) => category?.name || '')),
+        ...categoryNames,
         ...((product.product_variants || []).flatMap((variant) => [variant?.name || '', variant?.value || ''])),
       ]
-        .join(' ')
-        .toLowerCase()
+      const haystack = haystackParts.join(' ').toLowerCase()
+      const expandedHaystack = new Set(
+        haystackParts.flatMap((value) =>
+          value
+            .toLowerCase()
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .flatMap((part) => expandKeywordVariants(part))
+            .filter(Boolean)
+        )
+      )
 
-      const score = keywords.reduce((total, keyword) => total + (haystack.includes(keyword) ? 1 : 0), 0)
+      let score = keywords.reduce((total, keyword) => {
+        return total + (containsKeyword(haystack, keyword) || expandedHaystack.has(keyword) ? 1 : 0)
+      }, 0)
+
+      if (requestedCategory) {
+        const categoryMatch = categoryNames.some((name) => containsKeyword(name.toLowerCase(), requestedCategory))
+        const nameMatch = containsKeyword((product.name || '').toLowerCase(), requestedCategory)
+        if (categoryMatch) score += 4
+        if (nameMatch) score += 2
+      }
+
       return { product, score }
     })
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.product)
+}
+
+function detectRequestedCategory(message: string): string | null {
+  const normalized = message.toLowerCase()
+  if (/\bearrings?\b/.test(normalized)) return 'earring'
+  if (/\bnecklaces?\b/.test(normalized)) return 'necklace'
+  if (/\bbracelets?\b/.test(normalized)) return 'bracelet'
+  if (/\brings?\b/.test(normalized)) return 'ring'
+  return null
+}
+
+function containsKeyword(text: string, keyword: string): boolean {
+  if (!text || !keyword) return false
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(text)
 }
 
 function formatCatalogMatchSnippet(product: ProductRow, messageLower: string): string {
@@ -569,7 +653,7 @@ ${snippets.join('\n\n')}`
 }
 
 function makeConciseAnswer(text: string): string {
-  const cleaned = text
+  const cleaned = repairMojibake(text)
     .replace(/\s+/g, ' ')
     .replace(/\s*([.!?])\s*/g, '$1 ')
     .trim()
@@ -590,6 +674,19 @@ function makeConciseAnswer(text: string): string {
     words += nextWords
   }
   return out.trim() || taken
+}
+
+function repairMojibake(text: string): string {
+  if (!/[âÃ]/.test(text)) return text
+
+  try {
+    const repaired = Buffer.from(text, 'latin1').toString('utf8')
+    const originalArtifacts = (text.match(/[âÃ]/g) || []).length
+    const repairedArtifacts = (repaired.match(/[âÃ]/g) || []).length
+    return repairedArtifacts < originalArtifacts ? repaired : text
+  } catch {
+    return text
+  }
 }
 
 function dedupeFaqs(rows: FaqRow[]): FaqRow[] {

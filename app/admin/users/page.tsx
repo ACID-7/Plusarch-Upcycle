@@ -36,42 +36,29 @@ export default function AdminUsersPage() {
     setLoading(true)
     const { data: authUser } = await supabase.auth.getUser()
     setCurrentUserId(authUser?.user?.id ?? null)
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, name, phone')
-      .order('name', { ascending: true })
+    try {
+      const response = await fetch('/api/admin/users', { cache: 'no-store' })
+      const payload = await response.json().catch(() => ({}))
 
-    const userIds = (profiles || []).map(p => p.user_id)
-    let roles: { user_id: string; role: DbRoleType }[] = []
-    if (userIds.length) {
-      const { data: roleRows } = await supabase
-        .from('roles')
-        .select('user_id, role')
-        .in('user_id', userIds)
-      roles = (roleRows || []) as any
-    }
-    const roleMap = new Map(roles.map(r => [r.user_id, r.role]))
-    const merged: ProfileRow[] = (profiles || []).map(p => {
-      const dbRole = roleMap.get(p.user_id)
-      const normalizedRole: RoleType = dbRole === 'admin' ? 'admin' : 'customer'
-      return {
-        ...p,
-        email: null,
-        role: normalizedRole,
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.error === 'string' && payload.error.trim()
+            ? payload.error
+            : 'Failed to load admin users.'
+        )
       }
-    })
-    // ensure current user visible even if profile missing
-    if (authUser?.user && !merged.some(u => u.user_id === authUser.user.id)) {
-      merged.unshift({
-        user_id: authUser.user.id,
-        name: authUser.user.user_metadata?.name || 'Me',
-        email: authUser.user.email || null,
-        phone: (authUser.user.user_metadata?.phone as string | undefined) || null,
-        role: (roleMap.get(authUser.user.id) as DbRoleType) === 'admin' ? 'admin' : 'customer',
+
+      setUsers(Array.isArray(payload?.users) ? (payload.users as ProfileRow[]) : [])
+    } catch (error: any) {
+      toast({
+        title: 'Could not load users',
+        description: error?.message || 'Unexpected error',
+        variant: 'destructive',
       })
+      setUsers([])
+    } finally {
+      setLoading(false)
     }
-    setUsers(merged)
-    setLoading(false)
   }
 
   const handleRoleChange = async (userId: string, role: RoleType) => {
