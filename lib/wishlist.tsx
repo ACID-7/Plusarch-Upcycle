@@ -81,9 +81,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [user])
 
   const addItem = async (productId: string) => {
-    if (!user) return
+    if (!user) {
+      throw new Error('Please sign in to save items to your wishlist.')
+    }
 
     try {
+      const existingItem = items.find(item => item.product_id === productId)
+      if (existingItem) return
+
       const { error } = await supabase
         .from('wishlist_items')
         .insert({
@@ -95,11 +100,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       await fetchWishlist()
     } catch (error) {
       console.error('Error adding item to wishlist:', error)
+      throw error
     }
   }
 
   const removeItem = async (itemId: string) => {
-    if (!user) return
+    if (!user) {
+      throw new Error('Please sign in to manage your wishlist.')
+    }
 
     try {
       const { error } = await supabase
@@ -111,6 +119,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       await fetchWishlist()
     } catch (error) {
       console.error('Error removing item from wishlist:', error)
+      throw error
     }
   }
 

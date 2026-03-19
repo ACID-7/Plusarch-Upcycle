@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useWishlist } from '@/lib/wishlist'
 import { useCart } from '@/lib/cart'
-import { Heart, ShoppingCart, ArrowLeft, Trash2 } from 'lucide-react'
+import { Heart, ShoppingCart, ArrowLeft } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 export default function WishlistPage() {
@@ -24,7 +24,7 @@ export default function WishlistPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to remove item from wishlist.",
+        description: error instanceof Error ? error.message : "Failed to remove item from wishlist.",
         variant: "destructive",
       })
     }
@@ -40,7 +40,7 @@ export default function WishlistPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add item to cart.",
+        description: error instanceof Error ? error.message : "Failed to add item to cart.",
         variant: "destructive",
       })
     }

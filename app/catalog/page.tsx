@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/lib/cart'
 import { useWishlist } from '@/lib/wishlist'
+import { useAuth } from '@/lib/auth'
 import { Heart, ShoppingCart } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
@@ -36,8 +38,10 @@ export default function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
   const supabase = createClient()
+  const router = useRouter()
+  const { user } = useAuth()
   const { addItem: addToCart } = useCart()
-  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist()
+  const { items: wishlistItems, addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist()
 
   useEffect(() => {
     async function fetchData() {
@@ -78,6 +82,11 @@ export default function CatalogPage() {
   })
 
   const handleAddToCart = async (productId: string, productName: string) => {
+    if (!user) {
+      router.push('/auth/login')
+      return
+    }
+
     try {
       await addToCart(productId)
       toast({
@@ -87,28 +96,24 @@ export default function CatalogPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add item to cart.",
+        description: error instanceof Error ? error.message : "Failed to add item to cart.",
         variant: "destructive",
       })
     }
   }
 
   const handleWishlistToggle = async (productId: string, productName: string) => {
-    try {
-      const wishlistItem = products.find(p => p.id === productId)
-      if (!wishlistItem) return
+    if (!user) {
+      router.push('/auth/login')
+      return
+    }
 
+    try {
       const inWishlist = isInWishlist(productId)
       if (inWishlist) {
-        // Find the wishlist item ID and remove it
-        const { data } = await supabase
-          .from('wishlist_items')
-          .select('id')
-          .eq('product_id', productId)
-          .single()
-
-        if (data) {
-          await removeFromWishlist(data.id)
+        const existingItem = wishlistItems.find(item => item.product_id === productId)
+        if (existingItem) {
+          await removeFromWishlist(existingItem.id)
           toast({
             title: "Removed from wishlist",
             description: `${productName} has been removed from your wishlist.`,
@@ -124,7 +129,7 @@ export default function CatalogPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update wishlist.",
+        description: error instanceof Error ? error.message : "Failed to update wishlist.",
         variant: "destructive",
       })
     }
@@ -268,7 +273,7 @@ export default function CatalogPage() {
                     className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2"
                   >
                     <ShoppingCart className="w-4 h-4" />
-                    <span>Add to Cart</span>
+                    <span>{user ? 'Add to Cart' : 'Login / Signup'}</span>
                   </motion.button>
                 </div>
               </div>

@@ -23,7 +23,7 @@ export default function CartPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update quantity.",
+        description: error instanceof Error ? error.message : "Failed to update quantity.",
         variant: "destructive",
       })
     }
@@ -39,7 +39,7 @@ export default function CartPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to remove item from cart.",
+        description: error instanceof Error ? error.message : "Failed to remove item from cart.",
         variant: "destructive",
       })
     }
@@ -55,7 +55,7 @@ export default function CartPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to clear cart.",
+        description: error instanceof Error ? error.message : "Failed to clear cart.",
         variant: "destructive",
       })
     }
@@ -132,7 +132,7 @@ export default function CartPage() {
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
       toast({
         title: "Order saved",
-        description: "Your order was added to My Orders and cart was cleared.",
+        description: "Your order was saved and the cart was cleared.",
       })
     } catch {
       toast({

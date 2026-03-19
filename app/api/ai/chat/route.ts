@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import path from 'path'
 import fs from 'fs'
@@ -15,18 +15,28 @@ type ProductRow = {
   description: string | null
   materials: string | null
   care: string | null
-  categories?: Array<{ name: string | null }> | null
+  categories?: Array<{ name: string | null }> | { name: string | null } | null
   product_variants?: Array<{
     name: string | null
     value: string | null
     is_available?: boolean | null
     stock_quantity?: number | null
-  }> | null
+  }> | {
+    name: string | null
+    value: string | null
+    is_available?: boolean | null
+    stock_quantity?: number | null
+  } | null
 }
 
 type SettingRow = {
   key: string
   value: unknown
+}
+
+type QueryResult<T> = {
+  data: T | null
+  error: { message?: string } | null
 }
 
 type Intent =
@@ -73,60 +83,88 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required.' }, { status: 400 })
     }
 
-    const supabase = await createClient()
     const normalizedLower = normalizedMessage.toLowerCase()
     const keywords = extractKeywords(normalizedLower)
     const primaryIntent = detectIntent(normalizedLower)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabase =
+      supabaseUrl && supabaseKey
+        ? createSupabaseClient(supabaseUrl, supabaseKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          })
+        : null
 
-    const [faqTextRes, faqLikeRes, productTextRes, productLikeRes, productCatalogRes, settingsRes] = await Promise.all([
-      supabase
-        .from('faqs')
-        .select('question, answer')
-        .textSearch('question', normalizedMessage, {
-          type: 'websearch',
-          config: 'english',
-        })
-        .limit(3),
-      keywords.length > 0
-        ? supabase
-            .from('faqs')
-            .select('question, answer')
-            .or(keywords.map((k) => `question.ilike.%${k}%,answer.ilike.%${k}%`).join(','))
-            .limit(5)
-        : Promise.resolve({ data: [], error: null }),
-      supabase
-        .from('products')
-        .select('name, price_lkr, description, materials, care')
-        .textSearch('name', normalizedMessage, {
-          type: 'websearch',
-          config: 'english',
-        })
-        .limit(3),
-      keywords.length > 0
-        ? supabase
-            .from('products')
-            .select('name, price_lkr, description, materials, care, categories(name), product_variants(name, value, is_available, stock_quantity)')
-            .or(
-              keywords
-                .map(
-                  (k) =>
-                    `name.ilike.%${k}%,description.ilike.%${k}%,materials.ilike.%${k}%,care.ilike.%${k}%`
-                )
-                .join(',')
-            )
-            .eq('status', 'active')
-            .limit(6)
-        : Promise.resolve({ data: [], error: null }),
-      supabase
-        .from('products')
-        .select('name, price_lkr, description, materials, care, categories(name), product_variants(name, value, is_available, stock_quantity)')
-        .eq('status', 'active')
-        .limit(120),
-      supabase
-        .from('site_settings')
-        .select('key, value')
-        .in('key', ['whatsapp_number', 'email', 'business_hours', 'shipping_policy', 'return_policy']),
-    ])
+    const emptyResult: QueryResult<any[]> = { data: [], error: null }
+    const [faqTextRes, faqLikeRes, productTextRes, productLikeRes, productCatalogRes, settingsRes] = supabase
+      ? await Promise.all([
+          safeQuery(
+            supabase
+              .from('faqs')
+              .select('question, answer')
+              .textSearch('question', normalizedMessage, {
+                type: 'websearch',
+                config: 'english',
+              })
+              .limit(3),
+            'faqs text search'
+          ),
+          keywords.length > 0
+            ? safeQuery(
+                supabase
+                  .from('faqs')
+                  .select('question, answer')
+                  .or(keywords.map((k) => `question.ilike.%${k}%,answer.ilike.%${k}%`).join(','))
+                  .limit(5),
+                'faqs keyword search'
+              )
+            : Promise.resolve(emptyResult),
+          safeQuery(
+            supabase
+              .from('products')
+              .select('name, price_lkr, description, materials, care')
+              .textSearch('name', normalizedMessage, {
+                type: 'websearch',
+                config: 'english',
+              })
+              .limit(3),
+            'products text search'
+          ),
+          keywords.length > 0
+            ? safeQuery(
+                supabase
+                  .from('products')
+                  .select('name, price_lkr, description, materials, care, categories(name), product_variants(name, value, is_available, stock_quantity)')
+                  .or(
+                    keywords
+                      .map(
+                        (k) =>
+                          `name.ilike.%${k}%,description.ilike.%${k}%,materials.ilike.%${k}%,care.ilike.%${k}%`
+                      )
+                      .join(',')
+                  )
+                  .eq('status', 'active')
+                  .limit(6),
+                'products keyword search'
+              )
+            : Promise.resolve(emptyResult),
+          safeQuery(
+            supabase
+              .from('products')
+              .select('name, price_lkr, description, materials, care, categories(name), product_variants(name, value, is_available, stock_quantity)')
+              .eq('status', 'active')
+              .limit(120),
+            'products catalog'
+          ),
+          safeQuery(
+            supabase
+              .from('site_settings')
+              .select('key, value')
+              .in('key', ['whatsapp_number', 'email', 'business_hours', 'shipping_policy', 'return_policy']),
+            'site settings'
+          ),
+        ])
+      : [emptyResult, emptyResult, emptyResult, emptyResult, emptyResult, emptyResult]
 
     const faqResults = dedupeFaqs([
       ...((faqTextRes.data as FaqRow[] | null) || []),
@@ -202,6 +240,23 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('AI chat error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+async function safeQuery<T>(
+  query: PromiseLike<QueryResult<T>>,
+  label: string
+): Promise<QueryResult<T>> {
+  try {
+    const result = await query
+    if (result.error) {
+      console.warn(`[AI Chat] ${label} failed:`, result.error.message || result.error)
+      return { data: null, error: result.error }
+    }
+    return result
+  } catch (error) {
+    console.warn(`[AI Chat] ${label} threw:`, error)
+    return { data: null, error: { message: `${label} failed` } }
   }
 }
 
@@ -383,14 +438,16 @@ function findCatalogMatches(products: ProductRow[], messageLower: string): Produ
 
   return [...products]
     .map((product) => {
-      const categoryNames = (product.categories || []).map((category) => category?.name || '')
+      const categories = toArray(product.categories)
+      const variants = toArray(product.product_variants)
+      const categoryNames = categories.map((category) => category?.name || '')
       const haystackParts = [
         product.name || '',
         product.description || '',
         product.materials || '',
         product.care || '',
         ...categoryNames,
-        ...((product.product_variants || []).flatMap((variant) => [variant?.name || '', variant?.value || ''])),
+        ...variants.flatMap((variant) => [variant?.name || '', variant?.value || '']),
       ]
       const haystack = haystackParts.join(' ').toLowerCase()
       const expandedHaystack = new Set(
@@ -439,10 +496,10 @@ function containsKeyword(text: string, keyword: string): boolean {
 
 function formatCatalogMatchSnippet(product: ProductRow, messageLower: string): string {
   const name = product.name?.trim() || 'Unnamed product'
-  const category = (product.categories || [])
+  const category = toArray(product.categories)
     .map((item) => item?.name?.trim() || '')
     .find((value) => value.length > 0)
-  const matchingVariantValues = (product.product_variants || [])
+  const matchingVariantValues = toArray(product.product_variants)
     .map((variant) => variant?.value?.trim() || '')
     .filter((value) => value.length > 0 && messageLower.includes(value.toLowerCase()))
     .slice(0, 2)
@@ -548,7 +605,7 @@ function generateDeterministicResponse(input: {
 
     const details = topMatches.map((product) => {
       const name = product.name || 'Unnamed item'
-      const category = (product.categories || [])
+      const category = toArray(product.categories)
         .map((item) => item?.name?.trim() || '')
         .find((value) => value.length > 0)
       const price = typeof product.price_lkr === 'number' ? `LKR ${Math.round(product.price_lkr)}` : null
@@ -715,6 +772,12 @@ function dedupeProducts(rows: ProductRow[]): ProductRow[] {
     seen.add(key)
     return true
   })
+}
+
+function toArray<T>(value: T | T[] | null | undefined): T[] {
+  if (Array.isArray(value)) return value
+  if (value == null) return []
+  return [value]
 }
 
 function formatSettingValue(value: unknown): string {

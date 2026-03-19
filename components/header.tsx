@@ -236,9 +236,6 @@ export function Header() {
                 <Link href="/profile" className="block px-4 py-2 text-emerald-50 hover:bg-white/5 transition-colors duration-300">
                   My Profile
                 </Link>
-                <Link href="/orders" className="block px-4 py-2 text-emerald-50 hover:bg-white/5 transition-colors duration-300">
-                  My Orders
-                </Link>
                 <button
                   onClick={signOut}
                   className="block w-full text-left px-4 py-2 text-emerald-50 hover:bg-white/5 transition-colors duration-300"

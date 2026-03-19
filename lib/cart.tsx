@@ -88,7 +88,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user])
 
   const addItem = async (productId: string, quantity = 1) => {
-    if (!user) return
+    if (!user) {
+      throw new Error('Please sign in to add items to your cart.')
+    }
 
     try {
       // Check if item already exists
@@ -110,11 +112,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error adding item to cart:', error)
+      throw error
     }
   }
 
   const removeItem = async (itemId: string) => {
-    if (!user) return
+    if (!user) {
+      throw new Error('Please sign in to manage your cart.')
+    }
 
     try {
       const { error } = await supabase
@@ -126,11 +131,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await fetchCart()
     } catch (error) {
       console.error('Error removing item from cart:', error)
+      throw error
     }
   }
 
   const updateQuantity = async (itemId: string, quantity: number) => {
-    if (!user || quantity < 1) return
+    if (!user) {
+      throw new Error('Please sign in to manage your cart.')
+    }
+    if (quantity < 1) return
 
     try {
       const { error } = await supabase
@@ -142,11 +151,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await fetchCart()
     } catch (error) {
       console.error('Error updating cart item quantity:', error)
+      throw error
     }
   }
 
   const clearCart = async () => {
-    if (!user) return
+    if (!user) {
+      throw new Error('Please sign in to manage your cart.')
+    }
 
     try {
       const { error } = await supabase
@@ -158,6 +170,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setItems([])
     } catch (error) {
       console.error('Error clearing cart:', error)
+      throw error
     }
   }
 
