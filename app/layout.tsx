@@ -7,12 +7,16 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { CartProvider } from '@/lib/cart'
 import { WishlistProvider } from '@/lib/wishlist'
-import { ChatWidget } from '@/components/chat-widget'
 
 // Dynamically import AuthProvider to avoid SSR issues
 const AuthProvider = dynamic(() => import('@/lib/auth').then(mod => ({ default: mod.AuthProvider })), {
   ssr: false,
   loading: () => null
+})
+
+const ChatWidget = dynamic(() => import('@/components/chat-widget').then(mod => ({ default: mod.ChatWidget })), {
+  ssr: false,
+  loading: () => null,
 })
 
 const sans = Space_Grotesk({ subsets: ['latin'], variable: '--font-sans' })

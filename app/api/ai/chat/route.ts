@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import path from 'path'
@@ -311,13 +311,21 @@ let datasetCache: DatasetPair[] | null = null
 function loadFaqDataset(): DatasetPair[] {
   if (datasetCache) return datasetCache
   try {
-    const p = path.join(process.cwd(), 'data', 'ai-training', 'faq-dataset.json')
-    if (!fs.existsSync(p)) return []
-    const raw = fs.readFileSync(p, 'utf8')
-    const data = JSON.parse(raw) as { pairs?: DatasetPair[] }
-    const pairs = data.pairs ?? []
-    datasetCache = pairs.filter((x) => x?.question && x?.answer)
-    return datasetCache
+    const candidates = [
+      path.join(process.cwd(), 'data', 'ai-training', 'faq-dataset.cleaned.json'),
+      path.join(process.cwd(), 'data', 'ai-training', 'faq-dataset.json'),
+    ]
+
+    for (const candidate of candidates) {
+      if (!fs.existsSync(candidate)) continue
+      const raw = fs.readFileSync(candidate, 'utf8')
+      const data = JSON.parse(raw) as { pairs?: DatasetPair[] }
+      const pairs = data.pairs ?? []
+      datasetCache = pairs.filter((x) => x?.question && x?.answer)
+      return datasetCache
+    }
+
+    return []
   } catch {
     return []
   }
@@ -590,12 +598,12 @@ async function tryLlmAnswer(input: {
   const useFinetuned = isFinetunedModel(model)
 
   const systemContent = useOllama
-    ? `You are Plus Arch Upcycle customer support. Answer using ONLY the FAQ and product context below. Reply in 1–3 short sentences. Be friendly and direct. If the context does not contain the answer, say you can help with shipping, returns, materials, care, and products and suggest they ask specifically.
+    ? `You are Plus Arch Upcycle customer support. Answer using ONLY the FAQ and product context below. Reply in 1-3 short sentences. Be friendly and direct. If the context does not contain the answer, say you can help with shipping, returns, materials, care, and products and suggest they ask specifically.
 
 Context:
 ${snippets.join('\n\n')}`
     : useFinetuned
-      ? `You are Plus Arch Upcycle customer support. You were trained on our FAQ (shipping, returns, materials, care, products). Reply in 1–3 short, direct sentences. Use the context below only for live product names/prices or when your training does not cover the question.
+      ? `You are Plus Arch Upcycle customer support. You were trained on our FAQ (shipping, returns, materials, care, products). Reply in 1-3 short, direct sentences. Use the context below only for live product names/prices or when your training does not cover the question.
 
 Context:
 ${snippets.join('\n\n')}`
@@ -677,12 +685,12 @@ function makeConciseAnswer(text: string): string {
 }
 
 function repairMojibake(text: string): string {
-  if (!/[âÃ]/.test(text)) return text
+  if (!/[Ã¢Ãƒ]/.test(text)) return text
 
   try {
     const repaired = Buffer.from(text, 'latin1').toString('utf8')
-    const originalArtifacts = (text.match(/[âÃ]/g) || []).length
-    const repairedArtifacts = (repaired.match(/[âÃ]/g) || []).length
+    const originalArtifacts = (text.match(/[Ã¢Ãƒ]/g) || []).length
+    const repairedArtifacts = (repaired.match(/[Ã¢Ãƒ]/g) || []).length
     return repairedArtifacts < originalArtifacts ? repaired : text
   } catch {
     return text
@@ -719,17 +727,6 @@ function formatSettingValue(value: unknown): string {
   }
 }
 
-function getSettingLabel(key: string): string {
-  if (key === 'whatsapp_number') return 'WhatsApp'
-  if (key === 'email') return 'Email'
-  if (key === 'business_hours') return 'Business hours'
-  if (key === 'shipping_policy') return 'Shipping policy'
-  if (key === 'return_policy') return 'Return policy'
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase())
-}
-
 function polishResponseText(text: string): string {
   return text
     .replace(/^Setting:\s*/gim, '')
@@ -739,28 +736,17 @@ function polishResponseText(text: string): string {
     .trim()
 }
 
-function cleanSnippetForDisplay(snippet: string): string {
-  return snippet
-    .replace(/^FAQ:\s*/i, '')
-    .replace(/^Product:\s*/i, '')
-    .replace(/^Setting:\s*/i, '')
-    .replace(/\bMaterials:\s*/g, ' Materials: ')
-    .replace(/\bCare:\s*/g, ' Care: ')
-    .replace(/_/g, ' ')
-    .replace(/[ \t]{2,}/g, ' ')
-    .trim()
-}
-
 function detectIntent(message: string): Intent {
   if (/(^|\s)(hi|hello|hey|howdy|hiya|good morning|good afternoon|good evening|good day|greetings)(\s|$)/i.test(message) || /^(hi|hello|hey|howdy|yo)$/i.test(message.trim())) return 'greeting'
+  if (/(order status|where is my order|my order|track order|delivery update|shipping update|status update|has it shipped|where is it|order update)/i.test(message)) return 'order_status'
   if (/(shipping|delivery|arrive|dispatch|international|courier|tracking)/i.test(message)) return 'shipping'
   if (/(return|refund|exchange|replace|cancel)/i.test(message)) return 'returns'
   if (/(material|allergy|metal|fabric|eco|sustainab|upcycl)/i.test(message)) return 'materials'
   if (/(care|clean|maintain|wash|store|polish)/i.test(message)) return 'care'
   if (/(custom|personalized|engrave|design request|made to order)/i.test(message)) return 'custom'
   if (/(price|cost|payment|pay|card|bank|currency)/i.test(message)) return 'payment'
-  if (/(order status|where is my order|my order|track order)/i.test(message)) return 'order_status'
   if (/(contact|whatsapp|phone|email|support|hours)/i.test(message)) return 'contact'
   if (/(ring|necklace|bracelet|earring|jewelry|jewellery|product|item|stock|available|availability|color|colour|size)/i.test(message)) return 'product'
   return 'unknown'
 }
+

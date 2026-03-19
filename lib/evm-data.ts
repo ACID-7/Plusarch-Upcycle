@@ -1,4 +1,4 @@
-/**
+﻿/**
  * EVM (Earned Value Management) data for Plus Arch Upcycle project
  * Project: 9 weeks starting 18 Jan 2026 | Total LKR 81,950
  * Status: Development complete, starting testing (current period = Week 6)
@@ -6,13 +6,13 @@
 
 export const BUDGET_TOTAL_LKR = 81950
 export const DEVELOPMENT_FEE_LKR = 60000
-export const HOURLY_RATE_LKR = 300 // LKR per hour (Development 60,000 ÷ 200 hrs)
+export const HOURLY_RATE_LKR = 300 // LKR per hour (Development 60,000 / 200 hrs)
 
 /** Project timeline: 9 weeks from 18 Jan 2026 */
 export const PROJECT_START_DATE = '2026-01-18'
 export const NUM_WEEKS = 9
 
-/** Week labels with short date (week start) for chart – human-readable */
+/** Week labels with short date (week start) for chart - human-readable */
 export const WEEK_LABELS: { week: number; shortDate: string }[] = [
   { week: 1, shortDate: '18 Jan' },
   { week: 2, shortDate: '25 Jan' },
@@ -91,17 +91,17 @@ export const WBS_ACTIVITIES: { no: string; activity: string; plannedDays: number
   { no: '7.4', activity: 'Final project report', plannedDays: 29, actualDays: 29 },
 ]
 
-/** Week-by-week cumulative BCWS (Budgeted Cost of Work Scheduled) – 9 weeks */
+/** Week-by-week cumulative BCWS (Budgeted Cost of Work Scheduled) - 9 weeks */
 export const BCWS_BY_WEEK: number[] = [
   2500, 5500, 9500, 16000, 26000, 38000, 50000, 65000, 81950,
 ]
 
-/** Actual Cost of Work Performed – 9 weeks (slightly over in middle, then aligned) */
+/** Actual Cost of Work Performed - 9 weeks (slightly over in middle, then aligned) */
 export const ACWP_BY_WEEK: number[] = [
   2500, 6000, 10000, 17000, 27000, 39500, 51500, 66500, 81950,
 ]
 
-/** Budgeted Cost of Work Performed (earned value) – 9 weeks */
+/** Budgeted Cost of Work Performed (earned value) - 9 weeks */
 export const BCWP_BY_WEEK: number[] = [
   2500, 5500, 9800, 16500, 26500, 38500, 50500, 65500, 81950,
 ]
@@ -111,3 +111,4 @@ export const CURRENT_WEEK = 6
 
 /** Simple week labels for tables */
 export const LABEL_WEEKS = WEEK_LABELS.map((w) => `W${w.week}`)
+

@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-03-19T13:53:55.975Z",
+  "source_file": "data\\ai-training\\faq-dataset.json",
+  "cleaned_file": "data\\ai-training\\faq-dataset.cleaned.json",
+  "train_file": "data\\ai-training\\fine-tune-train.jsonl",
+  "valid_file": "data\\ai-training\\fine-tune-valid.jsonl",
+  "raw_pairs": 4416,
+  "cleaned_pairs": 3839,
+  "fine_tune_examples": 954,
+  "train_examples": 859,
+  "valid_examples": 95,
+  "dropped": {
+    "invalid": 0,
+    "missing_fields": 0,
+    "synthetic_noise": 566,
+    "duplicate_question": 11
+  },
+  "pair_counts_by_intent": {
+    "care": 73,
+    "contact": 64,
+    "greeting": 237,
+    "materials": 71,
+    "order_status": 50,
+    "payment": 40,
+    "product": 2885,
+    "returns": 79,
+    "shipping": 340
+  },
+  "fine_tune_counts_by_intent": {
+    "care": 73,
+    "contact": 64,
+    "greeting": 237,
+    "materials": 71,
+    "order_status": 50,
+    "payment": 40,
+    "returns": 79,
+    "shipping": 340
+  }
+}
