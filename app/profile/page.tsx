@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/client'
+import { fetchProfile, upsertProfile } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface UserProfile {
   name: string
@@ -23,6 +25,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  const router = useRouter()
   const [profile, setProfile] = useState<UserProfile>({ name: '' })
   const [loading, setLoading] = useState(true)
   const [editingProfile, setEditingProfile] = useState(false)
@@ -30,13 +33,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!user) return
+      if (!user) {
+        setLoading(false)
+        router.push('/auth/login?next=/profile')
+        return
+      }
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('user_id', user.id)
-        .single()
+      const profileData = await fetchProfile(supabase, user.id)
 
       if (profileData) {
         setProfile({ name: profileData.name || '' })
@@ -46,24 +49,21 @@ export default function ProfilePage() {
     }
 
     loadData()
-  }, [user, supabase])
+  }, [router, supabase, user])
 
   const handleUpdateProfile = async () => {
     try {
       if (!user) return
-      await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          name: profile.name,
-          phone: null,
-        })
+      await upsertProfile(supabase, {
+        userId: user.id,
+        name: profile.name,
+      })
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       })
       setEditingProfile(false)
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update profile.",
@@ -78,6 +78,10 @@ export default function ProfilePage() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400"></div>
       </div>
     )
+  }
+
+  if (!user) {
+    return null
   }
 
   return (

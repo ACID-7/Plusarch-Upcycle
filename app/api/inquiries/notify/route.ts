@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getErrorMessage } from '@/lib/errors'
 
 const DEFAULT_INQUIRY_TO = 'mhakmala7@gmail.com'
 
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
 
     const submittedAt = createdAt ? new Date(createdAt).toLocaleString() : new Date().toLocaleString()
 
+    // We build both plain text and HTML so the message renders well across email clients.
     const text = [
       'New inquiry submitted',
       '',
@@ -86,15 +88,16 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true })
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error?.message || 'Unexpected error while sending inquiry email.' },
+      { error: getErrorMessage(error, 'Unexpected error while sending inquiry email.') },
       { status: 500 }
     )
   }
 }
 
 function escapeHtml(value: string) {
+  // Inquiry content comes from users, so we escape it before embedding it into HTML email.
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

@@ -1,3 +1,4 @@
+// Terms is a static legal page, so there is no client logic or database dependency here.
 export default function TermsPage() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">

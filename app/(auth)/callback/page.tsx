@@ -3,25 +3,14 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { ensureCustomerRole, fetchProfile } from '@/lib/auth-utils'
 import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
-
-  const ensureCustomerRole = async (userId: string) => {
-    const roleCandidates = ['customer', 'operator'] as const
-    for (const role of roleCandidates) {
-      const { error } = await supabase
-        .from('roles')
-        .upsert(
-          { user_id: userId, role },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        )
-      if (!error) return
-    }
-  }
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -31,17 +20,11 @@ export default function AuthCallbackPage() {
         if (error) throw error
 
         if (data.session) {
-          await ensureCustomerRole(data.session.user.id)
+          await ensureCustomerRole(supabase, data.session.user.id)
 
-          // Check if profile exists, if not create one
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('user_id', data.session.user.id)
-            .single()
+          const profile = await fetchProfile(supabase, data.session.user.id)
 
           if (!profile) {
-            // Profile doesn't exist, redirect to profile setup
             router.push('/auth/profile-setup')
             return
           }
@@ -55,11 +38,11 @@ export default function AuthCallbackPage() {
         } else {
           throw new Error('No session found')
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error('Auth callback error:', error)
         toast({
           title: "Authentication failed",
-          description: error.message,
+          description: getErrorMessage(error, 'Authentication failed.'),
           variant: "destructive",
         })
         router.push('/auth/login')
@@ -67,7 +50,7 @@ export default function AuthCallbackPage() {
     }
 
     handleAuthCallback()
-  }, [router, toast])
+  }, [router, supabase, toast])
 
   return (
     <div className="min-h-screen flex items-center justify-center">

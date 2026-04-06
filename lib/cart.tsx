@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth'
 
@@ -13,6 +13,13 @@ interface CartItem {
     price_lkr: number
     product_images: { path: string }[]
   }
+}
+
+type CartRow = {
+  id: string
+  product_id: string
+  quantity: number
+  products: CartItem['product'] | CartItem['product'][]
 }
 
 interface CartContextType {
@@ -43,7 +50,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!user) {
       setItems([])
       setLoading(false)
@@ -67,8 +74,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error
 
-      // Transform the data to match our interface
-      const transformedData = (data || []).map(item => ({
+      // Supabase can return joined rows as either an object or array depending on relation metadata,
+      // so we normalize it here before exposing it to the rest of the UI.
+      const transformedData = ((data || []) as CartRow[]).map((item) => ({
         id: item.id,
         product_id: item.product_id,
         quantity: item.quantity,
@@ -81,11 +89,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase, user])
 
   useEffect(() => {
     fetchCart()
-  }, [user])
+  }, [fetchCart])
 
   const addItem = async (productId: string, quantity = 1) => {
     if (!user) {
@@ -93,7 +101,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Check if item already exists
+      // Reuse the existing cart row instead of creating duplicates for the same product.
       const existingItem = items.find(item => item.product_id === productId)
 
       if (existingItem) {

@@ -6,31 +6,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
+import { ensureCustomerRole } from '@/lib/auth-utils'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, Mail, Lock } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const supabase = createClient()
-
-  const ensureCustomerRole = async (userId: string) => {
-    const roleCandidates = ['customer', 'operator'] as const
-    for (const role of roleCandidates) {
-      const { error } = await supabase
-        .from('roles')
-        .upsert(
-          { user_id: userId, role },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        )
-      if (!error) return
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,19 +34,20 @@ export default function LoginPage() {
 
       if (error) throw error
       if (data.user) {
-        await ensureCustomerRole(data.user.id)
+        await ensureCustomerRole(supabase, data.user.id)
       }
 
       toast({
         title: "Signed in",
         description: "Welcome back.",
       })
-      router.push('/')
+      const nextPath = searchParams.get('next') || '/'
+      router.push(nextPath.startsWith('/') ? nextPath : '/')
       router.refresh()
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error, 'Unable to sign in.'),
         variant: "destructive",
       })
     } finally {

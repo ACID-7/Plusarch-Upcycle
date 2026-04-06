@@ -1,13 +1,15 @@
 ﻿"use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { mapDbRoleToAppRole } from '@/lib/auth-utils'
 import { createClient } from '@/lib/supabase/client'
 import { Search, ShieldCheck, Users } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/errors'
 
 type RoleType = 'admin' | 'customer'
 type DbRoleType = 'admin' | 'customer' | 'operator'
@@ -26,16 +28,9 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true)
-    const { data: authUser } = await supabase.auth.getUser()
-    setCurrentUserId(authUser?.user?.id ?? null)
     try {
       const response = await fetch('/api/admin/users', { cache: 'no-store' })
       const payload = await response.json().catch(() => ({}))
@@ -49,22 +44,26 @@ export default function AdminUsersPage() {
       }
 
       setUsers(Array.isArray(payload?.users) ? (payload.users as ProfileRow[]) : [])
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Could not load users',
-        description: error?.message || 'Unexpected error',
+        description: getErrorMessage(error),
         variant: 'destructive',
       })
       setUsers([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const handleRoleChange = async (userId: string, role: RoleType) => {
     setSavingId(userId)
     const roleCandidates: DbRoleType[] = role === 'admin' ? ['admin'] : ['customer', 'operator']
-    let updateError: any = null
+    let updateError: { message: string } | null = null
 
     for (const dbRole of roleCandidates) {
       const { error } = await supabase
@@ -75,7 +74,7 @@ export default function AdminUsersPage() {
         updateError = null
         break
       }
-      updateError = error
+      updateError = error ? { message: error.message } : null
     }
 
     setSavingId(null)
@@ -83,7 +82,7 @@ export default function AdminUsersPage() {
       toast({ title: 'Update failed', description: updateError.message, variant: 'destructive' })
     } else {
       toast({ title: 'Role updated', description: `User is now ${role}.` })
-      setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role } : u))
+      setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role: mapDbRoleToAppRole(role) } : u))
     }
   }
 

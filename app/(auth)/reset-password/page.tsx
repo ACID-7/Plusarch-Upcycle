@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { ArrowLeft, Lock } from 'lucide-react'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -20,19 +22,22 @@ export default function ResetPasswordPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    const hydrateSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        setReady(true)
+      }
+    }
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (event === 'PASSWORD_RECOVERY' || !!session) {
         setReady(true)
       }
     })
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setReady(true)
-      }
-    })
+    hydrateSession()
 
     return () => subscription.unsubscribe()
   }, [supabase])
@@ -70,10 +75,10 @@ export default function ResetPasswordPage() {
       })
       router.push('/auth/login')
       router.refresh()
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Reset failed',
-        description: error?.message || 'Could not update password.',
+        description: getErrorMessage(error, 'Could not update password.'),
         variant: 'destructive',
       })
     } finally {

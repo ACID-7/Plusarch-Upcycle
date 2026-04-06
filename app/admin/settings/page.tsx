@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,11 @@ type SettingField = {
   description?: string
   placeholder?: string
   rows?: number
+}
+
+type SiteSettingRow = {
+  key: string
+  value: unknown
 }
 
 const FIELDS: SettingField[] = [
@@ -112,11 +117,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -130,7 +131,7 @@ export default function AdminSettingsPage() {
       }
 
       const map: Record<SettingKey, string> = { ...DEFAULT_VALUES }
-      data?.forEach((row) => {
+      ;(data as SiteSettingRow[] | null)?.forEach((row) => {
         if (row.key === 'social_links') {
           const parsed = parseJsonPossiblyDoubleEncoded(row.value)
           const safeObject = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
@@ -146,7 +147,11 @@ export default function AdminSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const save = async () => {
     setSaving(true)

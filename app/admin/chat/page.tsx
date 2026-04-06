@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Clock, MessageSquare, RefreshCw, Search, Trash2, User } from 'lucide-react'
+import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js'
 
 type ConversationStatus = 'open' | 'pending' | 'closed'
 
@@ -76,7 +77,7 @@ export default function AdminChatPage() {
     })
   }, [conversations, filter, search])
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     setLoading(true)
     const { data: convoData } = await supabase
       .from('conversations')
@@ -111,9 +112,9 @@ export default function AdminChatPage() {
       setSelectedId(withProfiles[0].id)
     }
     setLoading(false)
-  }
+  }, [selectedId, supabase])
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string) => {
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -121,7 +122,7 @@ export default function AdminChatPage() {
       .order('created_at', { ascending: true })
 
     setMessages((data || []) as Message[])
-  }
+  }, [supabase])
 
   const handleStatusChange = async (status: ConversationStatus) => {
     if (!selectedId) return
@@ -230,12 +231,12 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     fetchConversations()
-  }, [])
+  }, [fetchConversations])
 
   useEffect(() => {
     if (!selectedId) return
     fetchMessages(selectedId)
-  }, [selectedId])
+  }, [fetchMessages, selectedId])
 
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -262,7 +263,7 @@ export default function AdminChatPage() {
     return () => {
       supabase.removeChannel(conversationsChannel)
     }
-  }, [])
+  }, [fetchConversations, supabase])
 
   useEffect(() => {
     if (!selectedId) return
@@ -277,7 +278,7 @@ export default function AdminChatPage() {
           table: 'messages',
           filter: `conversation_id=eq.${selectedId}`,
         },
-        (payload) => {
+        (payload: RealtimePostgresInsertPayload<Message>) => {
           const incoming = payload.new as Message
           setMessages((prev) => {
             if (prev.some((message) => message.id === incoming.id)) return prev
@@ -303,7 +304,7 @@ export default function AdminChatPage() {
     return () => {
       supabase.removeChannel(messagesChannel)
     }
-  }, [selectedId])
+  }, [fetchMessages, selectedId, supabase])
 
   return (
     <div className="space-y-6 text-emerald-50">

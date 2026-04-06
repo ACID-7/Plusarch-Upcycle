@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -47,6 +47,10 @@ interface Profile {
   name: string | null
 }
 
+type StatusRow = {
+  status: ConversationStatus | 'active' | 'hidden'
+}
+
 export default function AdminDashboard() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
@@ -63,7 +67,7 @@ export default function AdminDashboard() {
   const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([])
   const [profiles, setProfiles] = useState<Record<string, string>>({})
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     setLoading(true)
 
     const [
@@ -92,8 +96,8 @@ export default function AdminDashboard() {
 
     const conversationRows = recentChatsRes.data || []
     const inquiryRows = recentInquiriesRes.data || []
-    const allConversationStatuses = conversationsRes.data || []
-    const allProductStatuses = productsRes.data || []
+    const allConversationStatuses = (conversationsRes.data || []) as StatusRow[]
+    const allProductStatuses = (productsRes.data || []) as StatusRow[]
 
     const allUserIds = Array.from(
       new Set(
@@ -133,11 +137,11 @@ export default function AdminDashboard() {
     setRecentInquiries(inquiryRows as RecentInquiry[])
     setProfiles(profileMap)
     setLoading(false)
-  }
+  }, [supabase])
 
   useEffect(() => {
     loadDashboard()
-  }, [])
+  }, [loadDashboard])
 
   useEffect(() => {
     const channel = supabase
@@ -152,7 +156,7 @@ export default function AdminDashboard() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [loadDashboard, supabase])
 
   const backlogLabel = useMemo(() => {
     const backlog = stats.newInquiries + stats.openChats + stats.pendingChats

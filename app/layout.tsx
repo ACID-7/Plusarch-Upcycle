@@ -8,7 +8,7 @@ import { Footer } from '@/components/footer'
 import { CartProvider } from '@/lib/cart'
 import { WishlistProvider } from '@/lib/wishlist'
 
-// Dynamically import AuthProvider to avoid SSR issues
+// Auth and chat depend on browser-only APIs, so we keep them out of the SSR path.
 const AuthProvider = dynamic(() => import('@/lib/auth').then(mod => ({ default: mod.AuthProvider })), {
   ssr: false,
   loading: () => null
@@ -40,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sans.className} ${sans.variable} ${display.variable} antialiased min-h-screen flex flex-col`}>
+        {/* Global providers live at the root so every page shares the same auth, cart, wishlist, toast, and chat state. */}
         <AuthProvider>
           <CartProvider>
             <WishlistProvider>

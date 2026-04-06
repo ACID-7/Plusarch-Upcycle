@@ -1,5 +1,3 @@
-﻿"use client"
-
 import { Hero } from '@/components/hero'
 import { SocialProof } from '@/components/social-proof'
 
@@ -11,4 +9,3 @@ export default function Home() {
     </div>
   )
 }
-

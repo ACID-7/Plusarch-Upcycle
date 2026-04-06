@@ -1,3 +1,4 @@
+// Privacy is another static legal page that only communicates policy text to the user.
 export default function PrivacyPage() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">

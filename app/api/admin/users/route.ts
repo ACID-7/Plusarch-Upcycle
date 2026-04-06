@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { canAccessAdmin, mapDbRoleToAppRole } from '@/lib/auth-utils'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getErrorMessage } from '@/lib/errors'
 
 type DbRoleType = 'admin' | 'customer' | 'operator'
 
 export async function GET() {
   try {
+    // First verify the caller from the request cookies before switching to the service-role client.
     const supabase = await createServerClient()
     const {
       data: { user },
@@ -15,17 +18,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // The service-role client is only used on the server to read auth users and protected admin tables.
     const adminClient = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
-
-    const adminAllowlist = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean)
-
-    const emailIsAdmin = !!user.email && adminAllowlist.includes(user.email.toLowerCase())
 
     const { data: roleRow } = await adminClient
       .from('roles')
@@ -33,12 +30,11 @@ export async function GET() {
       .eq('user_id', user.id)
       .maybeSingle()
 
-    const roleIsAdmin = roleRow?.role === 'admin'
-
-    if (!emailIsAdmin && !roleIsAdmin) {
+    if (!canAccessAdmin(roleRow?.role, user.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Profiles, roles, and auth emails live in different places, so we merge them into one admin-friendly payload.
     const [{ data: profiles }, { data: roles }, authUsers] = await Promise.all([
       adminClient.from('profiles').select('user_id, name, phone').order('name', { ascending: true }),
       adminClient.from('roles').select('user_id, role'),
@@ -58,7 +54,7 @@ export async function GET() {
         name: profile.name,
         phone: profile.phone,
         email: emailMap.get(profile.user_id) || null,
-        role: roleMap.get(profile.user_id) === 'admin' ? 'admin' : 'customer',
+        role: mapDbRoleToAppRole(roleMap.get(profile.user_id)),
       })
     )
 
@@ -68,22 +64,34 @@ export async function GET() {
         name: (user.user_metadata?.name as string | undefined) || 'Me',
         phone: (user.user_metadata?.phone as string | undefined) || null,
         email: user.email || null,
-        role: roleMap.get(user.id) === 'admin' ? 'admin' : 'customer',
+        role: mapDbRoleToAppRole(roleMap.get(user.id)),
       })
     }
 
     return NextResponse.json({ users: merged })
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Unexpected error' }, { status: 500 })
+  } catch (error) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
-async function listAllAuthUsers(adminClient: any) {
+type AdminClient = {
+  auth: {
+    admin: {
+      listUsers: (params: { page: number; perPage: number }) => Promise<{
+        data: { users: Array<{ id: string; email?: string | null }> }
+        error: { message: string } | null
+      }>
+    }
+  }
+}
+
+async function listAllAuthUsers(adminClient: AdminClient) {
   const allUsers: Array<{ id: string; email?: string | null }> = []
   let page = 1
   const perPage = 200
 
   while (true) {
+    // Supabase Auth user listing is paginated, so we keep fetching until we receive a short page.
     const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage })
     if (error) throw error
 

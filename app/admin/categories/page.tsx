@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,16 +32,16 @@ export default function AdminCategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('categories').select('*').order('name')
     setCategories((data || []) as CategoryRow[])
     setLoading(false)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const handleAdd = async () => {
     if (!name.trim()) return

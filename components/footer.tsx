@@ -43,11 +43,15 @@ export function Footer() {
   })
 
   useEffect(() => {
+    let isActive = true
+
     ;(async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('site_settings')
         .select('key, value')
         .in('key', ['email', 'whatsapp_number', 'social_links', 'whatsapp_prefill_message'])
+
+      if (error || !isActive) return
 
       for (const row of data || []) {
         if (row.key === 'email') {
@@ -74,8 +78,11 @@ export function Footer() {
         }
       }
     })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+
+    return () => {
+      isActive = false
+    }
+  }, [supabase])
 
   const whatsappHref = useMemo(
     () => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`,
@@ -101,6 +108,7 @@ export function Footer() {
                   fill
                   sizes="48px"
                   className="object-cover"
+                  quality={70}
                 />
               </div>
               <div>
@@ -146,7 +154,7 @@ export function Footer() {
               </div>
               <p className="inline-flex items-center gap-2 text-emerald-100/70">
                 <Phone className="h-4 w-4" />
-                +94 77 444 2642
+                {whatsappNumber ? `+${whatsappNumber}` : '+94 77 444 2642'}
               </p>
             </div>
             <div className="flex items-center gap-2 pt-1">

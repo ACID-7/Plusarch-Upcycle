@@ -1,102 +1,49 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Recycle, Heart, Users } from 'lucide-react'
+import { Leaf, PackageCheck, Recycle } from 'lucide-react'
+
+const proofItems = [
+  { label: 'Handmade pieces delivered', value: '200+', icon: PackageCheck },
+  { label: 'Materials rescued from waste streams', value: '85%', icon: Leaf },
+  { label: 'Upcycled design collections launched', value: '12+', icon: Recycle },
+]
 
 export function SocialProof() {
-  const stats = [
-    {
-      icon: Recycle,
-      value: "100%",
-      label: "Eco-Friendly",
-      description: "Sustainable Materials",
-      color: "from-green-400 to-emerald-500",
-      bgColor: "from-green-500/10 to-emerald-500/10"
-    },
-    {
-      icon: Heart,
-      value: "500+",
-      label: "Happy Customers",
-      description: "Satisfied Shoppers",
-      color: "from-pink-400 to-rose-500",
-      bgColor: "from-pink-500/10 to-rose-500/10"
-    },
-    {
-      icon: Users,
-      value: "2",
-      label: "Owners",
-      description: "Founders & Craftsmen",
-      color: "from-blue-400 to-cyan-500",
-      bgColor: "from-blue-500/10 to-cyan-500/10"
-    }
-  ]
-
   return (
-    <section className="py-20 bg-gradient-to-b from-slate-800 to-slate-900 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-green-500/5 to-transparent rounded-full blur-3xl"></div>
-      </div>
+    <section className="relative overflow-hidden bg-stone-950 px-4 py-14 text-stone-50 sm:px-6 lg:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.2),transparent_40%)]" />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="relative mx-auto max-w-6xl">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8 max-w-2xl"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Trusted by Conscious Consumers
+          <p className="mb-3 text-sm uppercase tracking-[0.28em] text-emerald-300">Trusted by conscious shoppers</p>
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Built around craft, reuse, and repeat customers.
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Join thousands of eco-conscious customers who choose sustainable fashion
-          </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {proofItems.map((item, index) => (
+            <motion.article
+              key={item.label}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative group`}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.45, delay: index * 0.08 }}
+              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur"
             >
-              <div className={`bg-gradient-to-br ${stat.bgColor} backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/10`}>
-                {/* Icon */}
-                <div className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r ${stat.color} rounded-2xl mb-6 shadow-lg`}>
-                  <stat.icon className="w-8 h-8 text-white" />
-                </div>
-
-                {/* Content */}
-                <div className="text-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                    className={`text-4xl md:text-5xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}
-                  >
-                    {stat.value}
-                  </motion.div>
-
-                  <h3 className="text-xl font-semibold text-white mb-1">
-                    {stat.label}
-                  </h3>
-
-                  <p className="text-gray-400 text-sm">
-                    {stat.description}
-                  </p>
-                </div>
-
-                {/* Hover effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 to-emerald-500/0 group-hover:from-green-500/5 group-hover:to-emerald-500/5 rounded-2xl transition-all duration-300"></div>
-              </div>
-            </motion.div>
+              <item.icon className="mb-4 h-6 w-6 text-emerald-300" />
+              <div className="mb-2 text-3xl font-semibold text-white">{item.value}</div>
+              <p className="text-sm leading-6 text-stone-300">{item.label}</p>
+            </motion.article>
           ))}
         </div>
-
       </div>
     </section>
   )

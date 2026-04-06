@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
+import { canAccessAdmin, fetchProfile, fetchRole, resolveDisplayName } from '@/lib/auth-utils'
 import { useCart } from '@/lib/cart'
 import { useWishlist } from '@/lib/wishlist'
 import { createClient } from '@/lib/supabase/client'
@@ -42,51 +43,19 @@ export function Header() {
       return
     }
 
-    const adminAllowlist = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean)
-
     const loadRoleAndName = async () => {
-      // role check
-      const { data: roleRow, error: roleError } = await supabase
-        .from('roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      try {
+        const [role, profile] = await Promise.all([
+          fetchRole(supabase, user.id),
+          fetchProfile(supabase, user.id),
+        ])
 
-      if (roleError) {
-        console.warn('roles lookup failed (check RLS):', roleError.message)
-      }
-
-      const emailIsAdmin =
-        !!user.email &&
-        adminAllowlist.includes(user.email.toLowerCase())
-
-      setIsAdmin(
-        roleRow?.role === 'admin' || emailIsAdmin
-      )
-
-      // display name: prefer metadata, then profile table, then email prefix
-      const metaName = (user as any)?.user_metadata?.name
-      if (metaName) {
-        setDisplayName(metaName)
-        return
-      }
-
-      const { data: profileRow, error: profileError } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (profileError) {
-        console.warn('profile lookup failed (check RLS):', profileError.message)
-      }
-      if (profileRow?.name) {
-        setDisplayName(profileRow.name)
-      } else {
-        setDisplayName(user.email?.split('@')[0] || 'Account')
+        setIsAdmin(canAccessAdmin(role, user.email))
+        setDisplayName(resolveDisplayName(user, profile?.name))
+      } catch (error) {
+        console.warn('header user context lookup failed:', error)
+        setIsAdmin(canAccessAdmin(null, user.email))
+        setDisplayName(resolveDisplayName(user))
       }
     }
 
@@ -116,6 +85,7 @@ export function Header() {
               className="object-contain"
               sizes="56px"
               priority
+              quality={70}
             />
           </div>
           <div className="leading-tight">
@@ -183,6 +153,7 @@ export function Header() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className="p-2 text-emerald-100/70 hover:text-emerald-300 transition-colors duration-300 relative"
+              aria-label="View wishlist"
             >
               <Heart className="w-5 h-5" />
               {wishlistCount > 0 && (
@@ -203,6 +174,7 @@ export function Header() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className="p-2 text-emerald-100/70 hover:text-emerald-300 transition-colors duration-300 relative"
+              aria-label="View cart"
             >
               <ShoppingCart className="w-5 h-5" />
               {cartCount > 0 && (
@@ -263,6 +235,7 @@ export function Header() {
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden p-2 text-emerald-100/70 hover:text-emerald-300 transition-colors duration-300"
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </motion.button>

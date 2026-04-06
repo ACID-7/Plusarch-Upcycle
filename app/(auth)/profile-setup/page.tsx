@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
+import { ensureCustomerRole, upsertProfile } from '@/lib/auth-utils'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function ProfileSetupPage() {
   const [name, setName] = useState('')
@@ -16,19 +18,6 @@ export default function ProfileSetupPage() {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
-
-  const ensureCustomerRole = async (userId: string) => {
-    const roleCandidates = ['customer', 'operator'] as const
-    for (const role of roleCandidates) {
-      const { error } = await supabase
-        .from('roles')
-        .upsert(
-          { user_id: userId, role },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        )
-      if (!error) return
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,17 +28,8 @@ export default function ProfileSetupPage() {
 
       if (!user) throw new Error('No user found')
 
-      const { error } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: user.id,
-          name,
-          phone: phone || null,
-        })
-
-      if (error) throw error
-
-      await ensureCustomerRole(user.id)
+      await upsertProfile(supabase, { userId: user.id, name, phone })
+      await ensureCustomerRole(supabase, user.id)
 
       toast({
         title: "Profile created",
@@ -57,10 +37,10 @@ export default function ProfileSetupPage() {
       })
 
       router.push('/')
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error, 'Unable to complete profile setup.'),
         variant: "destructive",
       })
     } finally {

@@ -83,6 +83,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required.' }, { status: 400 })
     }
 
+    // The route answers in two stages:
+    // 1. Try a deterministic answer from catalog/settings/FAQ data.
+    // 2. Fall back to the LLM only when the rule-based path is not enough.
     const normalizedLower = normalizedMessage.toLowerCase()
     const keywords = extractKeywords(normalizedLower)
     const primaryIntent = detectIntent(normalizedLower)
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
           })
         : null
 
-    const emptyResult: QueryResult<any[]> = { data: [], error: null }
+    const emptyResult: QueryResult<unknown[]> = { data: [], error: null }
     const [faqTextRes, faqLikeRes, productTextRes, productLikeRes, productCatalogRes, settingsRes] = supabase
       ? await Promise.all([
           safeQuery(
@@ -166,6 +169,7 @@ export async function POST(request: NextRequest) {
         ])
       : [emptyResult, emptyResult, emptyResult, emptyResult, emptyResult, emptyResult]
 
+    // We merge text-search hits with keyword-search hits because either query can miss short product names.
     const faqResults = dedupeFaqs([
       ...((faqTextRes.data as FaqRow[] | null) || []),
       ...((faqLikeRes.data as FaqRow[] | null) || []),
@@ -195,7 +199,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ response: makeConciseAnswer(deterministicResponse) })
     }
 
-    // For product intent we only use catalog (checked products). For everything else we use dataset + catalog + FAQs.
+    // Product answers are restricted to live catalog data so the AI does not invent unavailable items.
     const datasetSnippets =
       primaryIntent === 'product'
         ? []

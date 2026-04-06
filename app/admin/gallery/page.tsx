@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,16 +29,16 @@ export default function AdminGalleryPage() {
   const [editCaption, setEditCaption] = useState('')
   const [editSortOrder, setEditSortOrder] = useState('')
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('gallery_items').select('*').order('sort_order', { ascending: true })
     setItems((data || []) as GalleryItem[])
     setLoading(false)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const handleAdd = async () => {
     if (!path.trim()) {

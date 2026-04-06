@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
 interface AuthContextType {
@@ -19,15 +19,15 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [supabase, setSupabase] = useState<any>(null)
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    // Only initialize on client side
+    // Supabase auth state depends on browser storage, so this provider is hydrated only on the client.
     if (typeof window !== 'undefined') {
       const client = createClient()
       setSupabase(client)
 
-      // Get initial session
+      // We fetch the current session once on mount, then keep it in sync through the auth subscription below.
       const getSession = async () => {
         try {
           const { data: { session } } = await client.auth.getSession()
@@ -41,9 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       getSession()
 
-      // Listen for auth changes
+      // This keeps the navbar, cart, wishlist, and protected pages aligned with login/logout events.
       const { data: { subscription } } = client.auth.onAuthStateChange(
-        async (event, session) => {
+        async (_event: AuthChangeEvent, session: Session | null) => {
           setUser(session?.user ?? null)
           setLoading(false)
         }
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return () => subscription.unsubscribe()
     } else {
-      // On server side, just set loading to false
+      // This branch avoids leaving SSR renders stuck in a loading state.
       setLoading(false)
     }
   }, [])

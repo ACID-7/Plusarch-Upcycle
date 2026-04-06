@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth'
 
@@ -12,6 +12,12 @@ interface WishlistItem {
     price_lkr: number
     product_images: { path: string }[]
   }
+}
+
+type WishlistRow = {
+  id: string
+  product_id: string
+  products: WishlistItem['product'] | WishlistItem['product'][]
 }
 
 interface WishlistContextType {
@@ -38,7 +44,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     if (!user) {
       setItems([])
       setLoading(false)
@@ -61,8 +67,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error
 
-      // Transform the data to match our interface
-      const transformedData = (data || []).map(item => ({
+      // As with cart joins, we normalize relation output so UI components can treat every item consistently.
+      const transformedData = ((data || []) as WishlistRow[]).map((item) => ({
         id: item.id,
         product_id: item.product_id,
         product: Array.isArray(item.products) ? item.products[0] : item.products
@@ -74,11 +80,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase, user])
 
   useEffect(() => {
     fetchWishlist()
-  }, [user])
+  }, [fetchWishlist])
 
   const addItem = async (productId: string) => {
     if (!user) {
@@ -86,6 +92,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Wishlist items are unique by product, so we short-circuit if it already exists locally.
       const existingItem = items.find(item => item.product_id === productId)
       if (existingItem) return
 

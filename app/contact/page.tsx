@@ -19,6 +19,9 @@ type Settings = {
   business_hours: string
 }
 
+type SettingKey = keyof Settings
+
+// Contact links can come from settings in different shapes, so we normalize them into a safe URL before use.
 function normalizeExternalUrl(input: string) {
   const value = input.trim()
   if (!value) return ''
@@ -28,6 +31,7 @@ function normalizeExternalUrl(input: string) {
   return `https://${value}`
 }
 
+// This page mixes two responsibilities: public contact shortcuts and a protected inquiry form for signed-in users.
 export default function ContactPage() {
   const INQUIRY_COOLDOWN_SECONDS = 180
   const supabase = createClient()
@@ -53,6 +57,7 @@ export default function ContactPage() {
 
   useEffect(() => {
     async function fetchSettings() {
+      // These values are editable from the admin panel, so the public page reads them from the database.
       const keys = ['whatsapp_number', 'email', 'social_links', 'business_hours']
       const { data } = await supabase.from('site_settings').select('key, value').in('key', keys)
       if (!data) return
@@ -65,18 +70,23 @@ export default function ContactPage() {
       }
 
       for (const row of data) {
+        if (!['whatsapp_number', 'email', 'social_links', 'business_hours'].includes(row.key)) {
+          continue
+        }
+
+        const key = row.key as SettingKey
         try {
           const parsed = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
-          if (row.key === 'social_links' && typeof parsed === 'object' && parsed !== null) {
+          if (key === 'social_links' && typeof parsed === 'object' && parsed !== null) {
             next.social_links = parsed as Record<string, string>
-          } else if (typeof parsed === 'string') {
-            ;(next as any)[row.key] = parsed
-          } else if (typeof row.value === 'string') {
-            ;(next as any)[row.key] = row.value.replace(/"/g, '')
+          } else if (key !== 'social_links' && typeof parsed === 'string') {
+            next[key] = parsed
+          } else if (key !== 'social_links' && typeof row.value === 'string') {
+            next[key] = row.value.replace(/"/g, '')
           }
         } catch {
-          if (typeof row.value === 'string') {
-            ;(next as any)[row.key] = row.value.replace(/"/g, '')
+          if (key !== 'social_links' && typeof row.value === 'string') {
+            next[key] = row.value.replace(/"/g, '')
           }
         }
       }
@@ -85,6 +95,7 @@ export default function ContactPage() {
     }
 
     async function hydrateProfile() {
+      // When a logged-in customer opens the form, we prefill known details to reduce friction.
       if (!user) return
       const { data } = await supabase
         .from('profiles')
@@ -100,6 +111,7 @@ export default function ContactPage() {
     }
 
     async function hydrateInquiryCooldown() {
+      // Cooldown is a lightweight anti-spam guard based on the user's latest inquiry timestamp.
       if (!user) {
         setInquiryCooldownRemaining(0)
         return
@@ -209,7 +221,7 @@ export default function ContactPage() {
 
     let { error } = await supabase.from('inquiries').insert(payload)
     if (error?.message?.toLowerCase().includes('subject')) {
-      // Backward-compat for environments where subject column is missing.
+      // Backward compatibility: some older databases may still be missing the separate `subject` column.
       const fallbackMessage = `Subject: ${inquiry.subject.trim()}\n${formattedMessage.trim()}`
       const fallback = await supabase.from('inquiries').insert({
         user_id: user.id,

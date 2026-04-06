@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/client'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
+import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js'
 
 interface Message {
   id: string
@@ -56,11 +57,13 @@ export function ChatWidget() {
   const [statusNote, setStatusNote] = useState('You are connected to a live specialist.')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pendingMessageIdsRef = useRef<Set<string>>(new Set())
+  const isInitializingRef = useRef(false)
   const quickReplies = ['Order details', 'Product availability', 'Shipping info', 'Care instructions']
 
   const supabase = createClient()
 
   useEffect(() => {
+    // Other pages open this widget by dispatching a DOM event, which keeps the trigger simple and decoupled.
     const handleOpenChat = (event: CustomEvent<OpenChatDetail>) => {
       const mode = event.detail?.mode === 'ai' ? 'ai' : 'live'
       const prefill = event.detail?.prefill?.trim()
@@ -84,17 +87,21 @@ export function ChatWidget() {
   }, [user])
 
   useEffect(() => {
+    // Auto-scroll after each message so new replies stay visible on mobile and desktop.
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, aiMessages, aiLoading])
 
   useEffect(() => {
-    if (!isOpen || !user || chatMode !== 'live') return
-    initializeChat()
-  }, [isOpen, user, chatMode])
+    if (user) return
+    setConversation(null)
+    setMessages([])
+    setStatusNote('Sign in to start live chat with a specialist.')
+  }, [user])
 
   useEffect(() => {
     if (!conversation) return
 
+    // Live chat messages are streamed from Supabase Realtime so the customer sees admin replies without refresh.
     const channel = supabase
       .channel(`chat-messages-${conversation.id}`)
       .on(
@@ -105,10 +112,11 @@ export function ChatWidget() {
           table: 'messages',
           filter: `conversation_id=eq.${conversation.id}`,
         },
-        (payload) => {
+        (payload: RealtimePostgresInsertPayload<Message>) => {
           const incoming = payload.new as Message
           setMessages((prev) => {
             if (prev.some((item) => item.id === incoming.id)) return prev
+            // If the realtime payload matches an optimistic message, replace it instead of rendering both.
             const optimisticId = Array.from(pendingMessageIdsRef.current).find((pendingId) => {
               const optimisticMessage = prev.find((item) => item.id === pendingId)
               return optimisticMessage?.sender_type === incoming.sender_type && optimisticMessage.body === incoming.body
@@ -130,26 +138,41 @@ export function ChatWidget() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [conversation?.id])
+  }, [conversation, supabase])
 
-  const initializeChat = async () => {
-    if (!user) return null
-
-    setStatusNote('Connecting you with a live specialist...')
-    // Find or create live chat conversation
-    const { data: existingConv } = await supabase
-      .from('conversations')
+  const loadMessages = useCallback(async (conversationId: string) => {
+    const { data } = await supabase
+      .from('messages')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'open')
-      .single()
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
 
-    if (existingConv) {
-      setConversation(existingConv)
-      loadMessages(existingConv.id)
-      setStatusNote('You are connected. Ask us anything.')
-      return existingConv as Conversation
-    } else {
+    if (data) setMessages(data)
+  }, [supabase])
+
+  const initializeChat = useCallback(async () => {
+    if (!user) return null
+    if (conversation) return conversation
+    if (isInitializingRef.current) return null
+
+    // This ref prevents duplicate conversation creation when the widget opens and rerenders quickly.
+    isInitializingRef.current = true
+    setStatusNote('Connecting you with a live specialist...')
+    try {
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'open')
+        .maybeSingle()
+
+      if (existingConv) {
+        setConversation(existingConv)
+        await loadMessages(existingConv.id)
+        setStatusNote('You are connected. Ask us anything.')
+        return existingConv as Conversation
+      }
+
       const { data: newConv, error } = await supabase
         .from('conversations')
         .insert({ user_id: user.id })
@@ -162,20 +185,17 @@ export function ChatWidget() {
         setStatusNote('Say hello! A specialist will join shortly.')
         return newConv as Conversation
       }
+    } finally {
+      isInitializingRef.current = false
     }
 
     return null
-  }
+  }, [conversation, loadMessages, supabase, user])
 
-  const loadMessages = async (conversationId: string) => {
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-
-    if (data) setMessages(data)
-  }
+  useEffect(() => {
+    if (!isOpen || !user || chatMode !== 'live') return
+    initializeChat()
+  }, [chatMode, initializeChat, isOpen, user])
 
   const sendMessage = async (messageOverride?: string) => {
     const messageToSend = (messageOverride ?? newMessage).trim()
@@ -194,6 +214,7 @@ export function ChatWidget() {
 
     if (activeConversation) {
       const optimisticId = `pending-${Date.now()}`
+      // We render the message immediately, then reconcile it with the database row when the insert succeeds.
       const optimisticMessage: Message = {
         id: optimisticId,
         sender_type: 'user',
@@ -234,6 +255,7 @@ export function ChatWidget() {
   }
 
   const sendAiMessage = async (messageToSend: string) => {
+    // Only the last few turns are sent to the AI endpoint to keep the payload small and predictable.
     const history: AiHistoryMessage[] = aiMessages
       .slice(-10)
       .map((item): AiHistoryMessage => ({

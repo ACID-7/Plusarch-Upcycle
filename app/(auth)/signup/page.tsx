@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, Mail, Lock } from 'lucide-react'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function SignupPage() {
   const [name, setName] = useState('')
@@ -55,10 +56,10 @@ export default function SignupPage() {
       })
       router.push(data.session ? '/auth/profile-setup' : '/auth/login')
       router.refresh()
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error, 'Unable to create account.'),
         variant: "destructive",
       })
     } finally {

@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { canAccessAdmin, fetchRole } from '@/lib/auth-utils'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { AdminHeader } from '@/components/admin/header'
 
+// This layout protects the entire admin area before rendering dashboard navigation or content.
 export default function AdminLayout({
   children,
 }: {
@@ -18,6 +20,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     async function checkAdminAccess() {
+      // Admin access is verified from both the roles table and the email allowlist fallback.
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
@@ -25,28 +28,14 @@ export default function AdminLayout({
         return
       }
 
-      const adminAllowlist = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean)
-
-      const emailIsAdmin =
-        !!user.email &&
-        adminAllowlist.includes(user.email.toLowerCase())
-
-      const { data: roleRow, error: roleError } = await supabase
-        .from('roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (roleError) {
-        console.warn('Admin check roles lookup failed (check RLS):', roleError.message)
+      let role: string | null = null
+      try {
+        role = await fetchRole(supabase, user.id)
+      } catch (error) {
+        console.warn('Admin check roles lookup failed:', error)
       }
 
-      const roleIsAdmin = roleRow?.role === 'admin'
-
-      if (roleIsAdmin || emailIsAdmin) {
+      if (canAccessAdmin(role, user.email)) {
         setIsAdmin(true)
       } else {
         router.push('/')

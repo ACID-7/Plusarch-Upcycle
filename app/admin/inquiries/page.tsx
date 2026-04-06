@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,13 +54,9 @@ export default function AdminInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | InquiryStatus>('all')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('inquiries')
       .select('id, user_id, subject, message, status, created_at')
       .order('created_at', { ascending: false })
@@ -70,7 +66,32 @@ export default function AdminInquiriesPage() {
         .from('inquiries')
         .select('id, user_id, message, status, created_at')
         .order('created_at', { ascending: false })
-      data = ((fallback.data || []) as InquiryRowNoSubject[]).map((row) => ({ ...row, subject: null }))
+      const fallbackRows = ((fallback.data || []) as InquiryRowNoSubject[]).map((row) => ({ ...row, subject: null }))
+      setItems(fallbackRows)
+      const userIds = Array.from(new Set(fallbackRows.map((row) => row.user_id)))
+      if (userIds.length) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('user_id, name, phone')
+          .in('user_id', userIds)
+
+        const profileMap: Record<string, ProfileRow> = {}
+        for (const profile of (profileData || []) as ProfileRow[]) {
+          profileMap[profile.user_id] = profile
+        }
+        setProfiles(profileMap)
+      } else {
+        setProfiles({})
+      }
+
+      const emailMap: Record<string, string> = {}
+      for (const row of fallbackRows) {
+        const parsedEmail = row.message.match(/Email:\s*([^\n]+)/i)?.[1]?.trim()
+        if (parsedEmail) emailMap[row.user_id] = parsedEmail
+      }
+      setEmails(emailMap)
+      setLoading(false)
+      return
     }
 
     const rows = (data || []) as InquiryRow[]
@@ -100,7 +121,11 @@ export default function AdminInquiriesPage() {
     setEmails(emailMap)
 
     setLoading(false)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const updateStatus = async (id: string, status: InquiryStatus) => {
     const { error } = await supabase.from('inquiries').update({ status }).eq('id', id)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,11 +58,7 @@ export default function AdminProductsPage() {
   const [draftImages, setDraftImages] = useState<Array<{ path: string; sort_order?: number }>>([{ path: '', sort_order: 0 }])
   const [imageInputs, setImageInputs] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     const [{ data: productData }, { data: categoryData }] = await Promise.all([
       supabase
@@ -74,7 +70,11 @@ export default function AdminProductsPage() {
     setProducts((productData || []) as ProductRow[])
     setCategories((categoryData || []) as CategoryRow[])
     setLoading(false)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleCreate = async () => {
     if (!draft.name || !draft.price_lkr) {

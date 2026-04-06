@@ -5,7 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
@@ -73,7 +72,7 @@ export default function CatalogPage() {
     }
 
     fetchData()
-  }, [])
+  }, [supabase])
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -208,6 +207,7 @@ export default function CatalogPage() {
                         width={400}
                         height={400}
                         className="w-full h-64 object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     </motion.div>
                   )}

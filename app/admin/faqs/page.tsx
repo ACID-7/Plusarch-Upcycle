@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,16 +28,16 @@ export default function AdminFaqsPage() {
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('faqs').select('*').order('sort_order', { ascending: true })
     setFaqs((data || []) as FAQRow[])
     setLoading(false)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const handleAdd = async () => {
     if (!question.trim() || !answer.trim()) {

@@ -18,6 +18,8 @@ interface Product {
   product_images: { path: string; sort_order: number }[]
 }
 
+type ProductImage = Product['product_images'][number]
+
 export default function ProductPage() {
   const params = useParams()
   const [product, setProduct] = useState<Product | null>(null)
@@ -48,7 +50,7 @@ export default function ProductPage() {
 
       if (!error && data) {
         setProduct(data)
-        data.product_images.sort((a, b) => a.sort_order - b.sort_order)
+        data.product_images.sort((a: ProductImage, b: ProductImage) => a.sort_order - b.sort_order)
       }
 
       const { data: whatsappData } = await supabase
@@ -69,7 +71,7 @@ export default function ProductPage() {
     }
 
     fetchProduct()
-  }, [params.id])
+  }, [params.id, supabase])
 
   const handleOrderViaWhatsApp = () => {
     const message = encodeURIComponent(
@@ -106,7 +108,7 @@ export default function ProductPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
-          <p className="text-muted-foreground">The product you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground">The product you&apos;re looking for doesn&apos;t exist.</p>
         </div>
       </div>
     )
@@ -123,6 +125,7 @@ export default function ProductPage() {
               alt={product.name}
               fill
               className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
           {product.product_images.length > 1 && (
@@ -140,6 +143,7 @@ export default function ProductPage() {
                     alt={`${product.name} ${index + 1}`}
                     fill
                     className="object-cover"
+                    sizes="80px"
                   />
                 </button>
               ))}

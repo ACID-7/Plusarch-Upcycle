@@ -31,7 +31,7 @@ export default function FAQPage() {
     }
 
     fetchFAQs()
-  }, [])
+  }, [supabase])
 
   if (loading) {
     return (
