@@ -58,6 +58,7 @@ export default function AdminProductsPage() {
   const [draftImages, setDraftImages] = useState<Array<{ path: string; sort_order?: number }>>([{ path: '', sort_order: 0 }])
   const [imageInputs, setImageInputs] = useState<Record<string, string>>({})
 
+  // get all products and categories from the database so we can list them
   const loadData = useCallback(async () => {
     setLoading(true)
     const [{ data: productData }, { data: categoryData }] = await Promise.all([
@@ -76,6 +77,7 @@ export default function AdminProductsPage() {
     loadData()
   }, [loadData])
 
+  // create a new product and generate a unique slug for it
   const handleCreate = async () => {
     if (!draft.name || !draft.price_lkr) {
       toast({ title: 'Name and price required', variant: 'destructive' })
@@ -170,6 +172,7 @@ export default function AdminProductsPage() {
     toast({ title: 'Product deleted' })
   }
 
+  // quickly change a product from active to hidden and vice versa
   const handleStatusToggle = async (id: string, status: 'active' | 'hidden') => {
     const { error } = await supabase.from('products').update({ status }).eq('id', id)
     if (error) {

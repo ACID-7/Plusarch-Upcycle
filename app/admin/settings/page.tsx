@@ -94,6 +94,7 @@ const DEPRECATED_SITE_SETTING_KEYS = [
   'ai_quick_replies',
 ]
 
+// make sure the JSON for things like social links doesn't break if it was saved incorrectly before
 function parseJsonPossiblyDoubleEncoded(value: unknown): unknown {
   let current: unknown = value
 
@@ -117,6 +118,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // load all the site settings from the database into the form
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -153,6 +155,7 @@ export default function AdminSettingsPage() {
     load()
   }, [load])
 
+  // check if the JSON is valid and then save all the new settings
   const save = async () => {
     setSaving(true)
 

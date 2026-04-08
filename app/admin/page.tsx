@@ -67,6 +67,7 @@ export default function AdminDashboard() {
   const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([])
   const [profiles, setProfiles] = useState<Record<string, string>>({})
 
+  // get all the stats and numbers for the dashboard and save them in state
   const loadDashboard = useCallback(async () => {
     setLoading(true)
 
@@ -144,6 +145,7 @@ export default function AdminDashboard() {
   }, [loadDashboard])
 
   useEffect(() => {
+    // listen for any database changes (like a new message or inquiry) and reload if something happens
     const channel = supabase
       .channel('admin-dashboard')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, loadDashboard)
@@ -166,6 +168,7 @@ export default function AdminDashboard() {
     return 'High backlog'
   }, [stats])
 
+  // helper to turn an id into a real name if we have it, else show a short id
   const formatCustomer = (userId: string) => profiles[userId] || `User ${userId.slice(0, 8)}`
 
   return (

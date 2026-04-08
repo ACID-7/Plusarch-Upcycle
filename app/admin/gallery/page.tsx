@@ -29,6 +29,7 @@ export default function AdminGalleryPage() {
   const [editCaption, setEditCaption] = useState('')
   const [editSortOrder, setEditSortOrder] = useState('')
 
+  // get all the images for the gallery and order them by sort_order
   const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('gallery_items').select('*').order('sort_order', { ascending: true })
@@ -40,6 +41,7 @@ export default function AdminGalleryPage() {
     load()
   }, [load])
 
+  // save a new image path to the gallery database table
   const handleAdd = async () => {
     if (!path.trim()) {
       toast({ title: 'Image path required', variant: 'destructive' })
@@ -71,6 +73,7 @@ export default function AdminGalleryPage() {
     setEditSortOrder(String(item.sort_order))
   }
 
+  // update the existing image details in the database
   const saveEdit = async () => {
     if (!editingId || !editPath.trim()) return
     const payload = {

@@ -32,6 +32,7 @@ export default function AdminCategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
+  // fetch all categories from the database and put them in state
   const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('categories').select('*').order('name')
@@ -43,6 +44,7 @@ export default function AdminCategoriesPage() {
     load()
   }, [load])
 
+  // create a unique slug based on the category name and save it
   const handleAdd = async () => {
     if (!name.trim()) return
     setSaving(true)
@@ -104,6 +106,7 @@ export default function AdminCategoriesPage() {
     toast({ title: 'Category deleted' })
   }
 
+  // only show categories that match the search bar input
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return categories.filter(category => !q || category.name.toLowerCase().includes(q) || category.slug.includes(q))

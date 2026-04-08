@@ -28,6 +28,7 @@ export default function AdminFaqsPage() {
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
 
+  // grab all FAQs from the database and sort them by order
   const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('faqs').select('*').order('sort_order', { ascending: true })
@@ -39,6 +40,7 @@ export default function AdminFaqsPage() {
     load()
   }, [load])
 
+  // save a new FAQ with the question and answer from the form
   const handleAdd = async () => {
     if (!question.trim() || !answer.trim()) {
       toast({ title: 'Question and answer required', variant: 'destructive' })
@@ -67,6 +69,7 @@ export default function AdminFaqsPage() {
     setEditAnswer(faq.answer)
   }
 
+  // update the FAQ we are currently modifying in the database
   const saveEdit = async () => {
     if (!editingId || !editQuestion.trim() || !editAnswer.trim()) return
     const { error } = await supabase

@@ -35,6 +35,7 @@ interface InquiryRowNoSubject {
   created_at: string
 }
 
+// remove the automatic prefix lines like 'Name:' or 'Email:' from the message body so it looks cleaner
 function getSanitizedInquiryBody(message: string) {
   const lines = message.split('\n')
   const filtered = lines.filter((line) => {
@@ -54,6 +55,7 @@ export default function AdminInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | InquiryStatus>('all')
   const [loading, setLoading] = useState(true)
 
+  // fetch all inquiries and try to get the profiles for those users too
   const load = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -127,6 +129,7 @@ export default function AdminInquiriesPage() {
     load()
   }, [load])
 
+  // change the status of the inquiry to 'seen' or 'closed'
   const updateStatus = async (id: string, status: InquiryStatus) => {
     const { error } = await supabase.from('inquiries').update({ status }).eq('id', id)
     if (error) {
