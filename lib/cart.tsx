@@ -44,12 +44,14 @@ const CartContext = createContext<CartContextType>({
   loading: true,
 })
 
+// Shares cart state and actions across the app
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
   const supabase = createClient()
 
+  // Loads cart items for the signed-in user
   const fetchCart = useCallback(async () => {
     if (!user) {
       setItems([])
@@ -95,6 +97,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     fetchCart()
   }, [fetchCart])
 
+  // Adds an item or increases its quantity
   const addItem = async (productId: string, quantity = 1) => {
     if (!user) {
       throw new Error('Please sign in to add items to your cart.')
@@ -124,6 +127,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Removes one cart item and refreshes state
   const removeItem = async (itemId: string) => {
     if (!user) {
       throw new Error('Please sign in to manage your cart.')
@@ -143,6 +147,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Updates quantity and keeps it at one or more
   const updateQuantity = async (itemId: string, quantity: number) => {
     if (!user) {
       throw new Error('Please sign in to manage your cart.')
@@ -163,6 +168,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Clears all cart items for the current user
   const clearCart = async () => {
     if (!user) {
       throw new Error('Please sign in to manage your cart.')
@@ -201,6 +207,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+// Reads cart context in any component
 export function useCart() {
   return useContext(CartContext)
 }

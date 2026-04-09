@@ -1,6 +1,6 @@
 "use client"
 
-// This page explains the brand story and the sustainability pitch in a marketing-friendly format.
+// Shares who we are and why upcycling matters
 export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-16 space-y-12">

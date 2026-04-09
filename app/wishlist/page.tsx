@@ -9,10 +9,12 @@ import { useCart } from '@/lib/cart'
 import { Heart, ShoppingCart, ArrowLeft } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
+// Shows saved favorites in one place
 export default function WishlistPage() {
   const { items, removeItem, loading } = useWishlist()
   const { addItem: addToCart } = useCart()
 
+  // Removes an item from wishlist
   const handleRemoveFromWishlist = async (itemId: string, productName: string) => {
     try {
       await removeItem(itemId)
@@ -29,6 +31,7 @@ export default function WishlistPage() {
     }
   }
 
+  // Adds a saved item to cart
   const handleAddToCart = async (productId: string, productName: string) => {
     try {
       await addToCart(productId)

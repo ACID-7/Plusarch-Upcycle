@@ -10,11 +10,13 @@ import { createClient } from '@/lib/supabase/client'
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
+// Lets users review cart items and checkout
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart, loading } = useCart()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const supabase = createClient()
 
+  // Updates item qty and blocks invalid values
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
 
@@ -29,6 +31,7 @@ export default function CartPage() {
     }
   }
 
+  // Removes one cart item and shows feedback
   const handleRemoveItem = async (itemId: string, productName: string) => {
     try {
       await removeItem(itemId)
@@ -45,6 +48,7 @@ export default function CartPage() {
     }
   }
 
+  // Clears the whole cart
   const handleClearCart = async () => {
     try {
       await clearCart()
@@ -61,6 +65,7 @@ export default function CartPage() {
     }
   }
 
+  // Saves the order then opens WhatsApp
   const handleCheckout = async () => {
     setIsCheckingOut(true)
     try {

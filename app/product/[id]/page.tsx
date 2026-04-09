@@ -20,6 +20,7 @@ interface Product {
 
 type ProductImage = Product['product_images'][number]
 
+// Shows one product with images, details, and contact actions
 export default function ProductPage() {
   const params = useParams()
   const [product, setProduct] = useState<Product | null>(null)
@@ -30,6 +31,7 @@ export default function ProductPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    // Gets product data and the current WhatsApp number
     async function fetchProduct() {
       if (!params.id) return
 
@@ -73,6 +75,7 @@ export default function ProductPage() {
     fetchProduct()
   }, [params.id, supabase])
 
+  // Opens WhatsApp with a ready order message
   const handleOrderViaWhatsApp = () => {
     const message = encodeURIComponent(
       `Hi! I'm interested in ordering "${product?.name}". Can you provide more details? ${window.location.href}`
@@ -80,6 +83,7 @@ export default function ProductPage() {
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
   }
 
+  // Opens support chat with the product name prefilled
   const handleChatWithPerson = () => {
     const productName = product?.name?.trim()
     const prefill = productName ? `Hi, I need help with "${productName}".` : ''

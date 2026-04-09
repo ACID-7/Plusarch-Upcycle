@@ -38,12 +38,14 @@ const WishlistContext = createContext<WishlistContextType>({
   loading: true,
 })
 
+// Shares wishlist state and actions across the app
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<WishlistItem[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
   const supabase = createClient()
 
+  // Loads wishlist items for the signed-in user
   const fetchWishlist = useCallback(async () => {
     if (!user) {
       setItems([])
@@ -86,6 +88,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     fetchWishlist()
   }, [fetchWishlist])
 
+  // Adds a product if it is not already saved
   const addItem = async (productId: string) => {
     if (!user) {
       throw new Error('Please sign in to save items to your wishlist.')
@@ -111,6 +114,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Removes one wishlist item and refreshes state
   const removeItem = async (itemId: string) => {
     if (!user) {
       throw new Error('Please sign in to manage your wishlist.')
@@ -130,6 +134,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Checks if a product is already wishlisted
   const isInWishlist = (productId: string) => {
     return items.some(item => item.product_id === productId)
   }
@@ -150,6 +155,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+// Reads wishlist context in any component
 export function useWishlist() {
   return useContext(WishlistContext)
 }
